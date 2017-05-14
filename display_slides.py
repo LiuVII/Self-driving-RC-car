@@ -79,7 +79,7 @@ while tries < 10:
 			# cv2.line(img,(int(width / 2 - r + num % d), int(height - shift)),(width // 2, height),(255,0,0),5)
 			## Show combined image
 			str_ind = str(ind)
-			cv2.imwrite(outdir + "/" + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
+			cv2.imwrite(outdir + "/" + "IMG_" + (5 - len(str_ind))*'0' + strq_ind + ".jpg", img)
 			cv2.imshow(img_name, img)
 			if cv2.waitKey(int(100.0 / fps)) & 0xFF == ord('q'):
 				break
