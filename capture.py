@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 # Init params
-url = "rtsp://admin:robotart1@10.10.10.102/onvif2"
+url = "rtsp://admin:robotart1@10.10.10.100/onvif2"
 time = 3600
 fps = 5
 outdir = "./data"
