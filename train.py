@@ -8,15 +8,15 @@ With admiration for and inspiration from:
 """
 import os
 import csv, random, numpy as np
+import argparse
 from keras.models import load_model, Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_shift
 
-data_dir = "./model_data/"
-img_dir = "./data/"
-model_dir = "./models/"
+
+
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
@@ -44,7 +44,7 @@ def get_X_y(data_file):
     with open(data_file) as fin:
         reader = csv.reader(fin)
         next(reader, None)
-        for img, steering_angle in reader:
+        for img, _, steering_angle in reader:
             X.append(img.strip())
             y.append(float(steering_angle))
     return X, y
@@ -97,12 +97,29 @@ def _generator(batch_size, X, y):
 def train():
     """Load our network and our data, fit the model, save it."""
     net = model(load=False, shape=(100, 100, 3))
-    X, y = get_X_y(data_dir + 'driving_log.csv')
+    X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
     #print("X\n", X[:10], "y\n", y[:10])
-    net.fit_generator(_generator(128, X, y), steps_per_epoch=200, epochs=1)
+    net.fit_generator(_generator(128, X, y), steps_per_epoch=args.steps, epochs=1)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
-    net.save(model_dir + 'short.h5')
+    net.save(model_dir + "_" + str(args.steps) + "_" + args.img_dir + '.h5')
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Trainer')
+    parser.add_argument(
+        'img_dir',
+        type=str,
+        help='Name of the training set folder. Default: tt_1',
+        default="tt_1"
+    )
+    parser.add_argument(
+        'steps',
+        type=int,
+        help='Training steps. Default: 200',
+        default=200
+    )
+    args = parser.parse_args()
+    data_dir = "./model_data/"
+    img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
+    model_dir = "./models/"
     train()
