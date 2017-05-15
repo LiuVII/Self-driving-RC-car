@@ -48,7 +48,9 @@ if args.out_dir == "":
 	saving = False
 	print("Warning: not recording this run")
 else:
-	saving = True	
+	saving = True
+	if not os.path.exists("./out_dir/"):
+		os.mkdir("./out_dir")
 	out_dir = "./out_dir/" + args.out_dir + "/"
 	if not os.path.exists(out_dir):
 		os.mkdir(out_dir)
