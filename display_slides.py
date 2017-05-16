@@ -86,10 +86,12 @@ max_angle = pi / 4.0
 
 # Read csv from file into dataframe
 if predict == False:
-	df = pd.read_csv("./data_sets/" + args.img_dir + "/" + "out.csv", names=['img_name', 'datetime', 'steering'])
+	df = pd.read_csv("./data_sets/" + args.img_dir + "/" +\
+		"out.csv", names=['img_name', 'datetime', 'steering'])
 	ind = 0
 else:
-	df = pd.read_csv(data_dir + args.img_dir + '_log.csv' , names=['img_name', 'datetime', 'steering'])
+	df = pd.read_csv(data_dir + args.img_dir +\
+		'_log.csv' , names=['img_name', 'datetime', 'steering'])
 	ind = 1
 sa_lst = []
 sample_length = len(df)
@@ -174,7 +176,7 @@ while tries < 10 and ind < sample_length:
 			str_ind = str(ind)
 			if saving:
 				cv2.imwrite(out_dir + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
-			cv2.imshow(img_namgit statuse, img)
+			cv2.imshow(img_name, img)
 			if cv2.waitKey(int(100.0 / args.fps)) & 0xFF == ord('q'):
 				break
 		else:

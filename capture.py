@@ -7,7 +7,7 @@ import numpy as np
 url = "rtsp://admin:robotart1@10.10.10.100/onvif2"
 time = 3600
 fps = 5
-outdir = "./data"
+outdir = "./st_data"
 
 ## Param for output directory
 argc = len(sys.argv)
