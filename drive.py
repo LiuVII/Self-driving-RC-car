@@ -1,11 +1,16 @@
 #!/bin/usr/env python3
 import getch
 import os
+import sys
 import time
 import argparse
 import urllib2
 import subprocess
 import cv2
+import numpy as np
+from math import pi
+# import threading
+import select
 
 from train import process_image, model
 
@@ -18,6 +23,8 @@ from train import process_image, model
 # down = '\033[B'
 # right = '\033[C'
 # left = '\033[D'
+max_angle = pi / 4.0
+key = 0
 
 def display_img():
 	test = subprocess.check_output(fetch_last_img, shell=True)
@@ -29,7 +36,7 @@ def display_img():
 		cv2.waitKey(1)
 		return img_name
 	print ("Error: couldn't get an image")
-	return 0
+	return ""
 
 def send_control(act_i):
 	try:
@@ -52,60 +59,83 @@ def auto_drive(img_name):
 
 	md_img, _ = process_image(img_name, None, False)
 	pred_angle = model.predict(np.array([md_img]))[0][0]
-	if pred_angle >= max_angle // 2:
-		act_i = 2
+	if pred_angle >= max_angle / 2.0:
+		act_i = 1
 		if pred_angle > max_angle:
 			pred_angle = max_angle
-	elif pred_angle <= -max_angle // 2:
-		act_i = 1
+	elif pred_angle <= -max_angle / 2.0:
+		act_i = 2
 		if pred_angle < -max_angle:
 			pred_angle = -max_angle
 	else:
 		act_i = 0
-	send_control(act_i)
-	return pred_angle
+	# send_control(act_i)
+	return pred_angle, act_i
+
+# def key_thread():
+#     while True:
+#     	key = getch.getch()
+#     	print("Inside thread")
+
+
 
 def	drive(auto):
 	ot = 0
 	wait_time = 0
 	curr_auto = auto
-	img_name = 0
-
+	img_name = ""
+	drive = False
+	key = 0
+	print("before thread")
+	# process = threading.Thread(target=key_thread)
+	# process.start()
 	while True:
-
+		# stdscr.nodelay(1)
+		while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+			key = sys.stdin.read(1)
+			if not key:
+				exit(0)
 		img_name = display_img()
-
-		if wait_time <= 0:
-			if curr_auto != auto:
-				print("Autopilot mode on!")
-			curr_auto = auto
+		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		key = getch.getch()
 		
+		
+		# key = getch.getch()
+		# print("Key:", key)
 		if ct - ot > 1:
 			drive = True
-			if wait_time > 0:
-				wait_time -= 1
 		
 		if key == '\033':
-			if curr_auto:
+			if auto:
 				print("Autopilot disengaged")
-				wait_time = 2
-				curr_auto = 0
+				wait_time = 5
+				auto = False
 			if drive:
 				maunal_drive()
 				ot = ct
 				drive = False
-		# If drive window is open and currently autopilot mode is on
-		elif curr_auto and drive and img_name:
-			auto_drive(img_name)
-			ot = ct
-			drive = False
-			img_name = 0
 		# Exit command
 		elif key == 'q':
 			exit(0)
+		elif key == 'a':
+			auto = True
+			print("Autopilot mode on!")
+		elif key == 's':
+			auto = False
+			print("Autopilot disengaged")
+		# If drive window is open and currently autopilot mode is on
+		elif auto and drive and img_name:
+			# st_t = time.time()
+			ang, act_i = auto_drive(img_name)
+			print("Prediction angle: %.2f, %s" % (ang, links[act_i]))
+				# auto_drive(img_name)
+			# print("time", time.time() - st_t)
+			ot = ct
+			drive = False
+			img_name = 0
+		key = 0
+		
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Driver')
@@ -146,6 +176,6 @@ if __name__ == '__main__':
 	links = ['/fwd', '/fwd/lt', '/fwd/rt', '/rev']
 	# clinks = ['curl '+ args.url + el for el in links]
 	clinks = [args.url + el for el in links]
-	
+	# curses.wrapper(drive)
 	drive(auto)
 	
