@@ -18,19 +18,22 @@ from keras.utils import to_categorical
 
 
 NUM_CLASSES = 3
-shapeX = 100
-shapeY = 100
+shapeX = 160
+shapeY = 120
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
     if load and tr_model: return load_model(tr_model)
 
-    conv_layers, dense_layers = [32, 64, 128], [512, 128, 32]
+    conv5x5_l, conv3x3_l, dense_layers = [16, 24], [36, 48], [512, 128, 16]
     
     model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='elu', input_shape=shape))
+    model.add(Conv2D(16, (5, 5), activation='elu', input_shape=shape))
     model.add(MaxPooling2D())
-    for cl in conv_layers:
+    for cl in conv5x5_l:
+        model.add(Conv2D(cl, (5, 5), activation='elu'))
+        model.add(MaxPooling2D())
+    for cl in conv3x3_l:
         model.add(Conv2D(cl, (3, 3), activation='elu'))
         model.add(MaxPooling2D())
     model.add(Flatten())
@@ -60,7 +63,7 @@ def process_image(path, command, augment, shape=(shapeX, shapeY)):
         image = random_darken(image)  # before numpy'd
 
     image = img_to_array(image)
-        
+    augment = False    
     if augment:
         # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
         if random.random() < 0.5:
@@ -108,7 +111,8 @@ def train():
     net.fit_generator(_generator(batch_size, X, y), steps_per_epoch=args.steps, epochs=1)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
-    net.save(model_dir + "_" + str(args.steps) + "_" + args.img_dir + '.h5')
+    net.save(model_dir + args.img_dir + "_" + str(args.steps) + "_" + str(batch_size) + "_" \
+        + str(shapeX) + "x" + str(shapeY) + '.h5')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trainer')
@@ -125,7 +129,7 @@ if __name__ == '__main__':
         default=200
     )
     parser.add_argument(
-        'batch_size',
+        '-batch',
         type=int,
         help='Batch size. Default: 64',
         default=64

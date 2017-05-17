@@ -27,7 +27,8 @@ from train import process_image, model
 # left = '\033[D'
 max_angle = pi / 4.0
 key = 0
-
+shapeX = 160
+shapeY = 120
 
 def record_data(img_name, act_i):
 	sa_lst.append([img_name, act_i])
@@ -69,19 +70,11 @@ def maunal_drive(img_name):
 def auto_drive(img_name):
 
 	md_img, _ = process_image(img_name, None, False)
-	pred_angle = model.predict(np.array([md_img]))[0][0]
-	if pred_angle >= max_angle / 2.0:
-		act_i = 1
-		if pred_angle > max_angle:
-			pred_angle = max_angle
-	elif pred_angle <= -max_angle / 2.0:
-		act_i = 2
-		if pred_angle < -max_angle:
-			pred_angle = -max_angle
-	else:
-		act_i = 0
-	# send_control(act_i)
-	return pred_angle, act_i
+	pred_act = model.predict(np.array([md_img]))[0]
+	print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
+	act_i = np.argmax(pred_act)
+	send_control(act_i)
+	return pred_act, act_i
 
 def	drive(auto):
 	ot = 0
@@ -100,7 +93,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time:
+		if (ct - ot) * 1000 > exp_time * 4:
 			drive = True
 		
 		if key == '\033':
@@ -123,8 +116,8 @@ def	drive(auto):
 			print("Autopilot disengaged")
 		# If drive window is open and currently autopilot mode is on
 		elif auto and drive and img_name:
-			ang, act_i = auto_drive(img_name)
-			print("Prediction angle: %.2f, %s" % (ang, links[act_i]))
+			pred_act, act_i = auto_drive(img_name)
+			# print("Prediction angle: %.2f, %s" % (ang, links[act_i]))
 			ot = ct
 			drive = False
 			img_name = 0
@@ -173,7 +166,7 @@ if __name__ == '__main__':
 	
 	auto = False
 	if args.model:
-		shape = (100, 100, 3)
+		shape = (shapeX, shapeY, 3)
 		model = model(True, shape, args.model)
 		auto = True
 		err = 0
