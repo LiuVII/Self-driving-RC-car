@@ -8,7 +8,9 @@ import urllib2
 import subprocess
 import cv2
 import numpy as np
+import pandas as pd
 from math import pi
+import shutil
 # import threading
 import select
 
@@ -26,9 +28,14 @@ from train import process_image, model
 max_angle = pi / 4.0
 key = 0
 
+
+def record_data(img_name, act_i):
+	sa_lst.append([img_name, act_i])
+	shutil.copy(img_name, img_dir)
+
 def display_img():
 	test = subprocess.check_output(fetch_last_img, shell=True)
-	img_name = args.data_dir + "/" + test.decode("utf-8").strip()
+	img_name = args.st_dir + "/" + test.decode("utf-8").strip()
 	img = cv2.imread(img_name, 1)
 	if type(img) != type(None):
 		cv2.destroyAllWindows()
@@ -42,17 +49,21 @@ def send_control(act_i):
 	try:
 		print("Sending command %s" % links[act_i])
 		# os.system(clinks[act_i])
-		r = urllib2.urlopen(clinks[act_i], timeout=1)
+		urllib2.urlopen(clinks[act_i], timeout=2)
+		return 0
 	except:
 		print("Command %s couldn't reach a vehicle" % clinks[act_i])
+		return -1
 
-def maunal_drive():
+def maunal_drive(img_name):
 
 	getch.getch()
 	key = getch.getch()	
 	for act_i in range(len(actions)):
 		if key == actions[act_i]:
-			send_control(act_i)
+			res = send_control(act_i)
+			if train == True:
+				record_data(img_name, act_i)
 			break
 
 def auto_drive(img_name):
@@ -72,13 +83,6 @@ def auto_drive(img_name):
 	# send_control(act_i)
 	return pred_angle, act_i
 
-# def key_thread():
-#     while True:
-#     	key = getch.getch()
-#     	print("Inside thread")
-
-
-
 def	drive(auto):
 	ot = 0
 	wait_time = 0
@@ -87,10 +91,7 @@ def	drive(auto):
 	drive = False
 	key = 0
 	print("before thread")
-	# process = threading.Thread(target=key_thread)
-	# process.start()
 	while True:
-		# stdscr.nodelay(1)
 		while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
 			key = sys.stdin.read(1)
 			if not key:
@@ -99,11 +100,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		
-		
-		# key = getch.getch()
-		# print("Key:", key)
-		if ct - ot > 1:
+		if ct - ot > exp_time:
 			drive = True
 		
 		if key == '\033':
@@ -112,12 +109,12 @@ def	drive(auto):
 				wait_time = 5
 				auto = False
 			if drive:
-				maunal_drive()
+				maunal_drive(img_name)
 				ot = ct
 				drive = False
 		# Exit command
 		elif key == 'q':
-			exit(0)
+			return
 		elif key == 'a':
 			auto = True
 			print("Autopilot mode on!")
@@ -126,11 +123,8 @@ def	drive(auto):
 			print("Autopilot disengaged")
 		# If drive window is open and currently autopilot mode is on
 		elif auto and drive and img_name:
-			# st_t = time.time()
 			ang, act_i = auto_drive(img_name)
 			print("Prediction angle: %.2f, %s" % (ang, links[act_i]))
-				# auto_drive(img_name)
-			# print("time", time.time() - st_t)
 			ot = ct
 			drive = False
 			img_name = 0
@@ -148,21 +142,33 @@ if __name__ == '__main__':
 	parser.add_argument(
 		'-url',
 		type=str,
-		help='Url for connection. Default: http://10.10.10.112',
-		default="http://10.10.10.112"
+		help='Url for connection. Default: http://192.168.2.3',
+		default="http://192.168.2.3"
 	)
 	parser.add_argument(
-		'-data_dir',
+		'-st_dir',
 		type=str,
-		help='Img stream directory. Default: st_data',
-		default="st_data"
+		help='Img stream directory. Default: st_dir',
+		default="st_dir"
+	)
+	parser.add_argument(
+		'-train',
+		type=str,
+		help='Name of the training set. Default: none',
+		default=""
+	)
+	parser.add_argument(
+		'-exp_time',
+		type=float,
+		help='Command expiration time. Default: 0.5s',
+		default=0.5
 	)
 	args = parser.parse_args()
 
-	if os.path.exists(args.data_dir):
-		fetch_last_img = "ls " + args.data_dir + " | tail -n1"
+	if os.path.exists(args.st_dir):
+		fetch_last_img = "ls " + args.st_dir + " | tail -n1"
 	else:
-		print("Error: streaming directory %s doesn't exist" % args.data_dir)
+		print("Error: streaming directory %s doesn't exist" % args.st_dir)
 		exit(1)
 	
 	auto = False
@@ -172,10 +178,21 @@ if __name__ == '__main__':
 		auto = True
 		err = 0
 
+	train = False
+	if args.train:
+		train = True
+		img_dir = "./data_sets/" + args.train + "/data/"
+		data_dir = "./model_data/"
+		if not os.path.exists(img_dir):
+			os.makedirs(img_dir)
+
+	exp_time = args.exp_time
 	actions = ['A', 'D', 'C', 'B']
 	links = ['/fwd', '/fwd/lt', '/fwd/rt', '/rev']
-	# clinks = ['curl '+ args.url + el for el in links]
 	clinks = [args.url + el for el in links]
-	# curses.wrapper(drive)
+	sa_lst = []
 	drive(auto)
+	if train:
+		df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
+		df.to_csv(data_dir + args.train + '_log.csv', index=False)
 	
