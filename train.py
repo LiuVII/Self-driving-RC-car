@@ -18,8 +18,8 @@ from keras.utils import to_categorical
 
 
 NUM_CLASSES = 3
-shapeX = 160
-shapeY = 120
+shapeX = 100
+shapeY = 100
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
@@ -105,7 +105,7 @@ def train():
     net = model(load=False, shape=(shapeX, shapeY, 3))
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
     # print("X\n", X[:10], "y\n", y[:10])
-    net.fit_generator(_generator(32, X, y), steps_per_epoch=args.steps, epochs=1)
+    net.fit_generator(_generator(batch_size, X, y), steps_per_epoch=args.steps, epochs=1)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
     net.save(model_dir + "_" + str(args.steps) + "_" + args.img_dir + '.h5')
@@ -124,7 +124,14 @@ if __name__ == '__main__':
         help='Training steps. Default: 200',
         default=200
     )
+    parser.add_argument(
+        'batch_size',
+        type=int,
+        help='Batch size. Default: 64',
+        default=64
+    )
     args = parser.parse_args()
+    batch_size = args.batch
     data_dir = "./model_data/"
     img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
     model_dir = "./models/"
