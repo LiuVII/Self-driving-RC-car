@@ -14,9 +14,12 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_shift
+from keras.utils import to_categorical
 
 
-
+NUM_CLASSES = 3
+shapeX = 160
+shapeY = 120
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
@@ -34,8 +37,8 @@ def model(load, shape, tr_model=None):
     for dl in dense_layers:
         model.add(Dense(dl, activation='elu'))
         model.add(Dropout(0.5))
-    model.add(Dense(1, activation='linear'))
-    model.compile(loss='mse', optimizer="adam")
+    model.add(Dense(NUM_CLASSES, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
     return model
     
 def get_X_y(data_file):
@@ -44,12 +47,12 @@ def get_X_y(data_file):
     with open(data_file) as fin:
         reader = csv.reader(fin)
         next(reader, None)
-        for img, _, steering_angle in reader:
+        for img, command in reader:
             X.append(img.strip())
-            y.append(float(steering_angle))
-    return X, y
+            y.append(int(command))
+    return X, to_categorical(y, num_classes=NUM_CLASSES)
 
-def process_image(path, steering_angle, augment, shape=(100,100)):
+def process_image(path, command, augment, shape=(shapeX, shapeY)):
     """Process and augment an image."""
     image = load_img(path, target_size=shape)
     
@@ -62,10 +65,13 @@ def process_image(path, steering_angle, augment, shape=(100,100)):
         # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
         if random.random() < 0.5:
             image = flip_axis(image, 1)
-            steering_angle = -steering_angle
+            if not command[0]:
+                tmp = command[2]
+                command[2] = command[1]
+                command[1] = tmp
 
     image = (image / 255. - .5).astype(np.float32)
-    return image, steering_angle
+    return image, command
 
 def random_darken(image):
     """Given an image (from Image.open), randomly darken a part of it."""
@@ -88,18 +94,18 @@ def _generator(batch_size, X, y):
         batch_X, batch_y = [], []
         for i in range(batch_size):
             sample_index = random.randint(0, len(X) - 1)
-            sa = y[sample_index]
-            image, sa = process_image(img_dir + X[sample_index], sa, augment=True)
+            command = y[sample_index]
+            image, command = process_image(img_dir + X[sample_index], command, augment=True)
             batch_X.append(image)
-            batch_y.append(sa)
+            batch_y.append(command)
         yield np.array(batch_X), np.array(batch_y)
 
 def train():
     """Load our network and our data, fit the model, save it."""
-    net = model(load=False, shape=(100, 100, 3))
+    net = model(load=False, shape=(shapeX, shapeY, 3))
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
-    #print("X\n", X[:10], "y\n", y[:10])
-    net.fit_generator(_generator(128, X, y), steps_per_epoch=args.steps, epochs=1)
+    # print("X\n", X[:10], "y\n", y[:10])
+    net.fit_generator(_generator(32, X, y), steps_per_epoch=args.steps, epochs=1)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
     net.save(model_dir + "_" + str(args.steps) + "_" + args.img_dir + '.h5')
@@ -109,8 +115,8 @@ if __name__ == '__main__':
     parser.add_argument(
         'img_dir',
         type=str,
-        help='Name of the training set folder. Default: tt_1',
-        default="tt_1"
+        help='Name of the training set folder. Default: ts_0',
+        default="ts_0"
     )
     parser.add_argument(
         'steps',

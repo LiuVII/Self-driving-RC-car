@@ -100,7 +100,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if ct - ot > exp_time:
+		if (ct - ot) * 1000 > exp_time:
 			drive = True
 		
 		if key == '\033':
@@ -159,9 +159,9 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'-exp_time',
-		type=float,
-		help='Command expiration time. Default: 0.5s',
-		default=0.5
+		type=int,
+		help='Command expiration time. Default: 500ms',
+		default=500
 	)
 	args = parser.parse_args()
 
@@ -186,11 +186,17 @@ if __name__ == '__main__':
 		if not os.path.exists(img_dir):
 			os.makedirs(img_dir)
 
-	exp_time = args.exp_time
 	actions = ['A', 'D', 'C', 'B']
-	links = ['/fwd', '/fwd/lt', '/fwd/rt', '/rev']
+	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/exp' + str(args.exp_time)]
 	clinks = [args.url + el for el in links]
 	sa_lst = []
+
+	# Set expiration time for commands
+	exp_time = args.exp_time
+	if send_control(4):
+		print("Exiting")
+		exit(0)
+
 	drive(auto)
 	if train:
 		df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
