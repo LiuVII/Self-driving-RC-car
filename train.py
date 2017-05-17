@@ -103,9 +103,13 @@ def _generator(batch_size, X, y):
             batch_y.append(command)
         yield np.array(batch_X), np.array(batch_y)
 
-def train():
+def train(model_name):
     """Load our network and our data, fit the model, save it."""
-    net = model(load=False, shape=(shapeX, shapeY, 3))
+    if model_name:
+        net = model(load=True, shape=(shapeX, shapeY, 3), tr_model=model_name)
+    else:
+        net = model(load=False, shape=(shapeX, shapeY, 3))
+
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
     # print("X\n", X[:10], "y\n", y[:10])
     net.fit_generator(_generator(batch_size, X, y), steps_per_epoch=args.steps, epochs=1)
@@ -134,9 +138,17 @@ if __name__ == '__main__':
         help='Batch size. Default: 64',
         default=64
     )
+    parser.add_argument(
+        '-model',
+        type=str,
+        default='',
+        help='Path to model h5 file. Model should be on the same path.'
+    )
+
     args = parser.parse_args()
+    
     batch_size = args.batch
     data_dir = "./model_data/"
     img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
     model_dir = "./models/"
-    train()
+    train(args.model)

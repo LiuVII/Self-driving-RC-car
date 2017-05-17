@@ -133,6 +133,12 @@ if __name__ == '__main__':
 		help='Path to model h5 file. Model should be on the same path.'
 	)
 	parser.add_argument(
+		'-auto',
+		type=int,
+		default=0,
+		help='Autopilot mode on - 1/ off- 0. Default: 0.'
+	)
+	parser.add_argument(
 		'-url',
 		type=str,
 		help='Url for connection. Default: http://192.168.2.3',
@@ -168,7 +174,7 @@ if __name__ == '__main__':
 	if args.model:
 		shape = (shapeX, shapeY, 3)
 		model = model(True, shape, args.model)
-		auto = True
+		auto = args.auto
 		err = 0
 
 	train = False
