@@ -50,7 +50,8 @@ def send_control(act_i):
 	try:
 		print("Sending command %s" % links[act_i])
 		# os.system(clinks[act_i])
-		urllib2.urlopen(clinks[act_i], timeout=2)
+		r = urllib2.urlopen(clinks[act_i], timeout=2)
+		print(r)
 		return 0
 	except:
 		print("Command %s couldn't reach a vehicle" % clinks[act_i])
@@ -93,7 +94,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time * 4:
+		if (ct - ot) * 1000 > exp_time * 2:
 			drive = True
 		
 		if key == '\033':
@@ -102,9 +103,9 @@ def	drive(auto):
 				wait_time = 5
 				auto = False
 			if drive:
+				drive = False
 				maunal_drive(img_name)
 				ot = ct
-				drive = False
 		# Exit command
 		elif key == 'q':
 			return
@@ -116,10 +117,10 @@ def	drive(auto):
 			print("Autopilot disengaged")
 		# If drive window is open and currently autopilot mode is on
 		elif auto and drive and img_name:
+			drive = False
 			pred_act, act_i = auto_drive(img_name)
 			# print("Prediction angle: %.2f, %s" % (ang, links[act_i]))
 			ot = ct
-			drive = False
 			img_name = 0
 		key = 0
 		
