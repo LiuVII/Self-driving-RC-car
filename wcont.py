@@ -23,7 +23,7 @@ while True:
 	if  c == '\033':
 		getch.getch()
 		c = getch.getch()
-		if ct - ot > 500:
+		if ct - ot >= 50:
 			ot = ct
 			ret_val = None
 			if c == 'A':

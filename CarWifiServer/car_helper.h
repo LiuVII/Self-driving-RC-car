@@ -22,10 +22,13 @@ extern Servo myservo;
 #define REV				D4
 
 #define M					150
-#define LEFT 			120
-// #define STRAIGHT	75
+#define LEFT 			120 // 100 @ 2sec
+#define STRAIGHT	85
+#define RIGHT			30 // 75 @ 2sec
+extern int left;
 extern int straight;
-#define RIGHT			30
+extern int right;
+
 
 #define IS_DIR_VAL(x)		(x.l_r || x.f_r)
 #define ANGLE_VALID(x)	(x >= RIGHT && x <= LEFT)

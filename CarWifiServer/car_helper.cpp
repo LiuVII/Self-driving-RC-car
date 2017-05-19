@@ -7,6 +7,8 @@ Servo myservo;
 int speed;
 int angle;
 int straight;
+int left;
+int right;
 
 int expire;
 unsigned long start_time;
@@ -44,14 +46,22 @@ dir_t parse_request(String &req) {
 	if ((index = req.indexOf("/lf")) != -1){
 		ret_dir.l_r = -1;
     index += String("/lf").length();
-    if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
-			val = 0;
+    // if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
+		// 	val = 0;
+		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+	      left = val;
+			}
 	}
 	if ((index = req.indexOf("/rt")) != -1) {
 		ret_dir.l_r = 1;
     index += String("/rt").length();
-    if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
-			val = 0;
+    // if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
+		// 	val = 0;
+		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+	      right = val;
+			}
 	}
 	// angle += val * -1 * ret_dir.l_r; // adjust angle the wheel
 	// if (angle > 120) angle = 120;
@@ -108,6 +118,7 @@ void send_accept(WiFiClient &client, dir_t &dir) {
   s += "old left/right: " + String(current_state.l_r) + "\r\n<br>";
   s += "old forward/reverse: " + String(current_state.f_r) + "\r\n<br>";
   s += "straight(def 75(min 30, max 120)): " + String(straight) + "\r\n<br>";
+	s += "left/right max/min (120/30): " + String(left) + " " + String(right) + "\r\n<br>";
   s += "new left/right: " + String(dir.l_r) + "\r\n<br>";
   s += "new forward/reverse: " + String(dir.f_r) + "\r\n<br>";
   s += "Steer angle: " + String(angle) + "\r\n<br>";
@@ -121,7 +132,7 @@ void send_accept(WiFiClient &client, dir_t &dir) {
 
 void set_direction(dir_t &dir) {
 	if (dir.l_r == -1) {
-		myservo.write(LEFT);
+		myservo.write(left);
 		Serial.println("Steering angle: left");
 	}
 	if (dir.l_r == 0) {
@@ -129,7 +140,7 @@ void set_direction(dir_t &dir) {
 		Serial.println("Steering angle: straight");
 	}
 	if (dir.l_r == 1) {
-		myservo.write(RIGHT);
+		myservo.write(right);
 		Serial.println("Steering angle: right");
 	}
 	// myservo.write(angle);

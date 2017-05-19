@@ -10,9 +10,11 @@ void setup() {
   current_state = {0, 0};
   curr_request = {0, 0};
 
-	straight = 85;
-  angle = straight;
-  speed = M;
+	straight = STRAIGHT;
+  left = LEFT;
+  right = RIGHT;
+  // angle = straight;
+  // speed = M;
 
 	expire = 500;
   ignored_cnt = 0;
