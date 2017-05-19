@@ -39,34 +39,79 @@ dir_t parse_request(String &req) {
 	dir_t ret_dir = {0, 0};
   int index;
   int val;
-	if ((index = req.indexOf("/lf")) != -1)
+
+	// Steering Angle set
+	if ((index = req.indexOf("/lf")) != -1){
 		ret_dir.l_r = -1;
-	if ((index = req.indexOf("/rt")) != -1)
+    index += String("/lf").length();
+    if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
+			val = 0;
+	}
+	if ((index = req.indexOf("/rt")) != -1) {
 		ret_dir.l_r = 1;
-	if ((index = req.indexOf("/fwd")) != -1)
-		ret_dir.f_r = 1;
-	if ((index = req.indexOf("/rev")) != -1)
-		ret_dir.f_r = -1;
+    index += String("/rt").length();
+    if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
+			val = 0;
+	}
+	// angle += val * -1 * ret_dir.l_r; // adjust angle the wheel
+	// if (angle > 120) angle = 120;
+	// else if (angle < 30) angle = 30;
+	// if (angle < straight)
+	// 	ret_dir.l_r = 1;
+	// if (angle > straight)
+	// 	ret_dir.l_r = -1;
+
   if ((index = req.indexOf("/st")) != -1) {
     index += String("/st").length();
-    val = atoi(req.c_str() + index);
-    if (val > 0)
-      straight = val;
-    else if (req.c_str()[index] == '0')
-        straight = val;
-    // otherwise default is used
-  }
+    if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0) {
+	      straight = val;
+				// angle = straight;
+				// ret_dir.l_r = 0;
+			}
+		}
+	}
+
+	// Expire period set
+  if ((index = req.indexOf("/exp")) != -1) {
+    index += String("/exp").length();
+    if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+				expire = val;
+		}
+	}
+
+	// Motor speed / direction set
+	if ((index = req.indexOf("/fwd")) != -1) {
+		ret_dir.f_r = 1;
+    index += String("/fwd").length();
+    if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+				speed = val;
+		}
+	}
+	if ((index = req.indexOf("/rev")) != -1) {
+		ret_dir.f_r = -1;
+    index += String("/rev").length();
+    if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+				speed = val;
+		}
+	}
 	return ret_dir;
 }
 
 void send_accept(WiFiClient &client, dir_t &dir) {
 	String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-	s += "<!DOCTYPE HTML>\r\n<html>\r\n";
+	s += "<!DOCTYPE HTML>\r\n<html>\r\n<br>";
+	s += "IR: " + String(digitalRead(IR)) + "\r\n<br>";
   s += "old left/right: " + String(current_state.l_r) + "\r\n<br>";
   s += "old forward/reverse: " + String(current_state.f_r) + "\r\n<br>";
   s += "straight(def 75(min 30, max 120)): " + String(straight) + "\r\n<br>";
   s += "new left/right: " + String(dir.l_r) + "\r\n<br>";
   s += "new forward/reverse: " + String(dir.f_r) + "\r\n<br>";
+  s += "Steer angle: " + String(angle) + "\r\n<br>";
+  s += "Speed: " + String(speed) + "\r\n<br>";
   s += "expire: " + String(expire) + "\r\n";
   s += "</html>\n";
 	client.flush();
@@ -87,6 +132,7 @@ void set_direction(dir_t &dir) {
 		myservo.write(RIGHT);
 		Serial.println("Steering angle: right");
 	}
+	// myservo.write(angle);
 }
 
 void activate_motor(dir_t &dir) {

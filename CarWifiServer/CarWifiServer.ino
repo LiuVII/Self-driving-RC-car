@@ -11,6 +11,9 @@ void setup() {
   curr_request = {0, 0};
 
 	straight = 85;
+  angle = straight;
+  speed = M;
+
 	expire = 500;
   ignored_cnt = 0;
 

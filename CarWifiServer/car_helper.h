@@ -16,6 +16,7 @@ extern const char *password;
 extern Servo myservo;
 
 // Pins
+#define IR				D0
 #define SRV				D2
 #define FWD				D3
 #define REV				D4
