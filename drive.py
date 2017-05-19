@@ -31,7 +31,7 @@ shapeX = 160
 shapeY = 120
 
 def record_data(img_name, act_i):
-	sa_lst.append([img_name, act_i])
+	sa_lst.append([img_name.strip("/")[-1], act_i])
 	shutil.copy(img_name, img_dir)
 
 def display_img():
@@ -94,7 +94,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time * 2:
+		if (ct - ot) * 1000 > exp_time + 250:
 			drive = True
 		
 		if key == '\033':
