@@ -15,7 +15,8 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_shift
 from keras.utils import to_categorical
-
+from sklearn.model_selection import train_test_split
+from random import randint
 
 NUM_CLASSES = 3
 shapeX = 160
@@ -91,19 +92,19 @@ def random_darken(image):
             image.putpixel((i, j), new_value)
     return image
 
-def _generator(batch_size, X, y):
+def _generator(batch_size, X, y, augment):
     """Generate batches of training data forever."""
     while 1:
         batch_X, batch_y = [], []
         for i in range(batch_size):
             sample_index = random.randint(0, len(X) - 1)
             command = y[sample_index]
-            image, command = process_image(img_dir + X[sample_index], command, augment=True)
+            image, command = process_image(img_dir + X[sample_index], command, augment=augment)
             batch_X.append(image)
             batch_y.append(command)
         yield np.array(batch_X), np.array(batch_y)
 
-def train(model_name):
+def train(model_name, val_split, epoch_num, step_num):
     """Load our network and our data, fit the model, save it."""
     if model_name:
         net = model(load=True, shape=(shapeX, shapeY, 3), tr_model=model_name)
@@ -111,11 +112,16 @@ def train(model_name):
         net = model(load=False, shape=(shapeX, shapeY, 3))
 
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
+    
     # print("X\n", X[:10], "y\n", y[:10])
-    net.fit_generator(_generator(batch_size, X, y), steps_per_epoch=args.steps, epochs=1)
+    Xtr, Xval, ytr, yval = train_test_split(X, y, test_size=val_split, random_state=randint(0, 100))
+    net.fit_generator(_generator(batch_size, Xtr, ytr, True), validation_data=_generator(batch_size, Xval, yval, False),\
+        validation_steps=len(X) // batch_size, steps_per_epoch=1, epochs=1)
+    net.fit_generator(_generator(batch_size, Xtr, ytr, True), validation_data=_generator(batch_size, Xval, yval, False),\
+        validation_steps=len(X) // batch_size, steps_per_epoch=step_num, epochs=epoch_num)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
-    net.save(model_dir + args.img_dir + "_" + str(args.steps) + "_" + str(batch_size) + "_" \
+    net.save(model_dir + args.img_dir + "_" + str(step_num) + "-"  + str(epoch_num) + "_" + str(batch_size) + "_" \
         + str(shapeX) + "x" + str(shapeY) + '.h5')
 
 if __name__ == '__main__':
@@ -144,11 +150,27 @@ if __name__ == '__main__':
         default='',
         help='Path to model h5 file. Model should be on the same path.'
     )
+    parser.add_argument(
+        '-valid',
+        type=int,
+        default=0.15,
+        help='Validation fraction of data. Default: 0.15'
+    )
+    parser.add_argument(
+        '-epoch',
+        type=int,
+        default=1,
+        help='Number of training epochs. Default: 1'
+    )
 
     args = parser.parse_args()
     
     batch_size = args.batch
     data_dir = "./model_data/"
-    img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
+    pos = args.img_dir.find("_s_")
+    if pos > 0:
+        img_dir = "./data_sets/" + args.img_dir[:pos] + "/" + "data/"
+    else:
+        img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
     model_dir = "./models/"
-    train(args.model)
+    train(args.model, args.valid, args.epoch, args.steps)

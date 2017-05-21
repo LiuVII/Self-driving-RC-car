@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from math import pi
 import shutil
-# import threading
+from datetime import datetime
 import select
 
 from train import process_image, model
@@ -31,8 +31,23 @@ shapeX = 160
 shapeY = 120
 
 def record_data(img_name, act_i):
-	sa_lst.append([img_name.strip("/")[-1], act_i])
-	shutil.copy(img_name, img_dir)
+	global correct
+	# Record data on left/right turns and forwards command
+	if act_i < 3:
+		if correct:
+			sa_lst.pop()
+			correct = False
+		ts = time.time()
+		st = datetime.fromtimestamp(ts).strftime('%Y%m%d-%H%M%S-%f')[:-4]
+		new_name = st + "_" + img_name.split("/")[-1]
+		print(img_name, new_name)
+		sa_lst.append([new_name, act_i])
+		shutil.copy(img_name, img_dir + new_name)
+	# Erase data on reverse commands
+	elif act_i == 3:
+		correct = True
+		sa_lst.pop()
+	
 
 def display_img():
 	test = subprocess.check_output(fetch_last_img, shell=True)
@@ -46,12 +61,15 @@ def display_img():
 	print ("Error: couldn't get an image")
 	return ""
 
-def send_control(act_i):
+def send_control(act_i, img_name):
+	global train
 	try:
 		print("Sending command %s" % links[act_i])
 		# os.system(clinks[act_i])
 		r = urllib2.urlopen(clinks[act_i], timeout=2)
 		print(r)
+		if train and act_i <= 3:
+			record_data(img_name, act_i)
 		return 0
 	except:
 		print("Command %s couldn't reach a vehicle" % clinks[act_i])
@@ -63,9 +81,7 @@ def maunal_drive(img_name):
 	key = getch.getch()	
 	for act_i in range(len(actions)):
 		if key == actions[act_i]:
-			res = send_control(act_i)
-			if train == True:
-				record_data(img_name, act_i)
+			res = send_control(act_i, img_name)
 			break
 
 def auto_drive(img_name):
@@ -74,7 +90,7 @@ def auto_drive(img_name):
 	pred_act = model.predict(np.array([md_img]))[0]
 	print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
 	act_i = np.argmax(pred_act)
-	send_control(act_i)
+	send_control(act_i, img_name)
 	return pred_act, act_i
 
 def	drive(auto):
@@ -94,7 +110,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time + 250:
+		if (ct - ot) * 1000 > exp_time * 3:
 			drive = True
 		
 		if key == '\033':
@@ -190,10 +206,10 @@ if __name__ == '__main__':
 	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/exp' + str(args.exp_time)]
 	clinks = [args.url + el for el in links]
 	sa_lst = []
-
+	correct = False
 	# Set expiration time for commands
 	exp_time = args.exp_time
-	if send_control(4):
+	if send_control(4, ""):
 		print("Exiting")
 		exit(0)
 

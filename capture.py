@@ -35,5 +35,6 @@ num = int(np.log10(int(time) * float(fps))) + 1
 
 # Save images to the folder
 command_str = "ffmpeg -i "+url+" -vf fps="+str(fps)+" '"+outdir+"/IMG_%0"+str(num)+"d.jpg'"
+print(command_str)
 os.system(command_str)
 exit(0)
