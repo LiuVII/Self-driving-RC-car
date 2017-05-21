@@ -189,7 +189,7 @@ if __name__ == '__main__':
 	
 	auto = False
 	if args.model:
-		shape = (shapeX, shapeY, 3)
+		shape = (shapeY, shapeX, 3)
 		model = model(True, shape, args.model)
 		auto = args.auto
 		err = 0

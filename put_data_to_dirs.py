@@ -14,7 +14,7 @@ def get_data(data_file):
     return X, y
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Trainer')
+    parser = argparse.ArgumentParser(description='Splitter')
     parser.add_argument(
         'img_dir',
         type=str,

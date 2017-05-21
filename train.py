@@ -16,24 +16,25 @@ from keras.layers.convolutional import MaxPooling2D
 from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_shift
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
-from random import randint
+import cv2
 
 NUM_CLASSES = 3
 shapeX = 160
 shapeY = 120
-
+topY = shapeY // 3 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
     if load and tr_model: return load_model(tr_model)
 
-    conv5x5_l, conv3x3_l, dense_layers = [16, 24], [36, 48], [512, 128, 16]
+    # conv5x5_l, conv3x3_l, dense_layers = [16, 24], [36, 48], [512, 128, 16]
+    conv3x3_l, dense_layers = [24, 32, 40], [512, 64, 16]
     
     model = Sequential()
     model.add(Conv2D(16, (5, 5), activation='elu', input_shape=shape))
     model.add(MaxPooling2D())
-    for cl in conv5x5_l:
-        model.add(Conv2D(cl, (5, 5), activation='elu'))
-        model.add(MaxPooling2D())
+    # for cl in conv5x5_l:
+    #     model.add(Conv2D(cl, (5, 5), activation='elu'))
+    #     model.add(MaxPooling2D())
     for cl in conv3x3_l:
         model.add(Conv2D(cl, (3, 3), activation='elu'))
         model.add(MaxPooling2D())
@@ -56,26 +57,44 @@ def get_X_y(data_file):
             y.append(int(command))
     return X, to_categorical(y, num_classes=NUM_CLASSES)
 
-def process_image(path, command, augment, shape=(shapeX, shapeY)):
+def process_image(path, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    image = load_img(path, target_size=shape)
     
-    if augment and random.random() < 0.5:
+    # image = load_img(path)
+    # image = img_to_array(image)
+    # print(len(image), len(image[0]))
+    image = load_img(path, target_size=shape)
+    # image = img_to_array(image)
+    # print(len(image), len(image[0]))
+    # exit(0)
+    if augment and random.random() < 0.25:
         image = random_darken(image)  # before numpy'd
-
-    image = img_to_array(image)
+    elif augment and random.random() < 0.25:
+        image = random_brighten(image)  # before numpy'd
+    aimage = img_to_array(image)
     augment = False    
     if augment:
         # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
         if random.random() < 0.5:
-            image = flip_axis(image, 1)
-            if not command[0]:
-                tmp = command[2]
-                command[2] = command[1]
-                command[1] = tmp
-
-    image = (image / 255. - .5).astype(np.float32)
-    return image, command
+            
+            # t = random.random()
+            # print(image)
+            # print(len(image))
+            # print(len(image[0]))
+            aimage_top = aimage[:topY]
+            # print(len(image_top))
+            aimage_bot = aimage[topY:]
+            # print(len(image_bot))
+            aimage =np.concatenate((aimage_top, flip_axis(aimage_bot, 0)), axis=0)
+            # print(len(image))
+            # print(aimage)
+            # exit(0)
+            aimage = flip_axis(aimage, 1)
+            tmp = command[2]
+            command[2] = command[1]
+            command[1] = tmp
+    aimage = aimage.astype(np.float32) / 255. - 0.5
+    return aimage, command
 
 def random_darken(image):
     """Given an image (from Image.open), randomly darken a part of it."""
@@ -92,12 +111,29 @@ def random_darken(image):
             image.putpixel((i, j), new_value)
     return image
 
-def _generator(batch_size, X, y, augment):
+def random_brighten(image):
+    """Given an image (from Image.open), randomly darken a part of it."""
+    w, h = image.size
+
+    # Make a random box.
+    x1, y1 = random.randint(0, w), random.randint(0, h)
+    x2, y2 = random.randint(x1, w), random.randint(y1, h)
+
+    # Loop through every pixel of our box (*GASP*) and darken.
+    for i in range(x1, x2):
+        for j in range(y1, y2):
+            new_value = tuple([int((x + 255.) * 0.5) for x in image.getpixel((i, j))])
+            image.putpixel((i, j), new_value)
+    return image
+
+def _generator(batch_size, classes, X, y, augment):
     """Generate batches of training data forever."""
     while 1:
         batch_X, batch_y = [], []
         for i in range(batch_size):
-            sample_index = random.randint(0, len(X) - 1)
+            class_i = random.randint(0, NUM_CLASSES - 1)
+            # sample_index = random.randint(0, len(classes[class_i]) - 1)
+            sample_index = random.choice(classes[class_i])
             command = y[sample_index]
             image, command = process_image(img_dir + X[sample_index], command, augment=augment)
             batch_X.append(image)
@@ -107,18 +143,30 @@ def _generator(batch_size, X, y, augment):
 def train(model_name, val_split, epoch_num, step_num):
     """Load our network and our data, fit the model, save it."""
     if model_name:
-        net = model(load=True, shape=(shapeX, shapeY, 3), tr_model=model_name)
+        net = model(load=True, shape=(shapeY, shapeX, 3), tr_model=model_name)
     else:
-        net = model(load=False, shape=(shapeX, shapeY, 3))
-
+        net = model(load=False, shape=(shapeY, shapeX, 3))
+    net.summary()
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
     
     # print("X\n", X[:10], "y\n", y[:10])
-    Xtr, Xval, ytr, yval = train_test_split(X, y, test_size=val_split, random_state=randint(0, 100))
-    net.fit_generator(_generator(batch_size, Xtr, ytr, True), validation_data=_generator(batch_size, Xval, yval, False),\
-        validation_steps=len(X) // batch_size, steps_per_epoch=1, epochs=1)
-    net.fit_generator(_generator(batch_size, Xtr, ytr, True), validation_data=_generator(batch_size, Xval, yval, False),\
-        validation_steps=len(X) // batch_size, steps_per_epoch=step_num, epochs=epoch_num)
+    Xtr, Xval, ytr, yval = train_test_split(X, y, test_size=val_split, random_state=random.randint(0, 100))
+    tr_classes = [[] for _ in range(NUM_CLASSES)]
+    for i in range(len(ytr)):
+        for j in range(NUM_CLASSES):
+            if ytr[i][j]:
+                tr_classes[j].append(i)
+    val_classes = [[] for _ in range(NUM_CLASSES)]
+    for i in range(len(yval)):
+        for j in range(NUM_CLASSES):
+            if yval[i][j]:
+                val_classes[j].append(i)
+    net.fit_generator(_generator(batch_size, tr_classes, Xtr, ytr, True),\
+        validation_data=_generator(batch_size, val_classes, Xval, yval, False),\
+        validation_steps=max(len(Xval) // batch_size, 1), steps_per_epoch=1, epochs=1)
+    net.fit_generator(_generator(batch_size, tr_classes, Xtr, ytr, True), \
+        validation_data=_generator(batch_size, val_classes, Xval, yval, False),\
+        validation_steps=max(len(Xval) // batch_size, 1), steps_per_epoch=step_num, epochs=epoch_num)
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
     net.save(model_dir + args.img_dir + "_" + str(step_num) + "-"  + str(epoch_num) + "_" + str(batch_size) + "_" \
