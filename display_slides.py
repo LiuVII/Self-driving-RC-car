@@ -12,12 +12,18 @@ from PIL import Image
 
 from train import process_image, model
 
+
+NUM_CLASSES = 3
+shapeX = 160
+shapeY = 120
+
+
 parser = argparse.ArgumentParser(description='Recorder')
 parser.add_argument(
 	'img_dir',
 	type=str,
-	default='tt_1',
-	help='Name of the training set folder. Default: tt_1'
+	default='ts_0',
+	help='Name of the training set folder. Default: ts_0'
 )
 parser.add_argument(
 	'--fps',
@@ -36,6 +42,12 @@ parser.add_argument(
 	type=str,
 	default='',
 	help='Path to model h5 file. Model should be on the same path.'
+)
+parser.add_argument(
+	'-correct',
+	type=int,
+	default=0,
+	help='Correct recorded csv data 0 - off/ 1 - on.'
 )
 
 
@@ -61,10 +73,12 @@ if not os.path.exists(data_dir):
 # Model params
 predict = False
 if args.model:
-	shape = (100, 100, 3)
+	shape = (shapeY, shapeX, 3)
 	model = model(True, shape, args.model)
 	predict = True
 	err = 0
+
+correct = args.correct
 
 # Image flow params
 width = 320
@@ -85,38 +99,47 @@ d = 2 * r
 max_angle = pi / 4.0
 
 # Read csv from file into dataframe
-if predict == False:
-	df = pd.read_csv("./data_sets/" + args.img_dir + "/" +\
-		"out.csv", names=['img_name', 'datetime', 'steering'])
-	ind = 0
-else:
-	df = pd.read_csv(data_dir + args.img_dir +\
-		'_log.csv' , names=['img_name', 'datetime', 'steering'])
-	ind = 1
+# if predict == False:
+# 	df = pd.read_csv("./data_sets/" + args.img_dir + "/" +\
+# 		"out.csv", names=['img_name', 'command'])
+# 	ind = 0
+# else:
+df = pd.read_csv(data_dir + args.img_dir +\
+	'_log.csv' , names=['img_name', 'command'])
+ind = 1
 sa_lst = []
 sample_length = len(df)
 
 # Set steering boundaries
-if predict == False:
-	if min(df['steering']) < st_min_val:
-		st_min_val = min(df['steering'])
-	if max(df['steering']) > st_max_val:
-		st_max_val = min(df['steering'])
-	st_right_rng = st_mid_val - st_min_val
-	st_left_rng = st_max_val - st_mid_val
+# if predict == False:
+# 	if min(df['command']) < st_min_val:
+# 		st_min_val = min(df['command'])
+# 	if max(df['command']) > st_max_val:
+# 		st_max_val = min(df['command'])
+# 	st_right_rng = st_mid_val - st_min_val
+# 	st_left_rng = st_max_val - st_mid_val
 
 
-def get_steering(predict):
-	if predict == False:
-		st_curr = float(df['steering'].iloc[ind])
-		if st_curr > 0 and st_curr < st_mid_val:
-			angle = ((st_curr - st_mid_val) / st_right_rng) * max_angle
-		elif st_curr > 0:
-			angle = ((st_curr - st_mid_val) / st_left_rng) * max_angle
-		else:
-			angle = 0
+# def get_steering(predict):
+# 	if predict == False:
+# 		st_curr = float(df['command'].iloc[ind])
+# 		if st_curr > 0 and st_curr < st_mid_val:
+# 			angle = ((st_curr - st_mid_val) / st_right_rng) * max_angle
+# 		elif st_curr > 0:
+# 			angle = ((st_curr - st_mid_val) / st_left_rng) * max_angle
+# 		else:
+# 			angle = 0
+# 	else:
+# 		angle = float(df['command'].iloc[ind])
+# 	return angle
+
+def get_steering(st_curr):
+	if st_curr == 1:
+		angle = max_angle
+	elif st_curr == 2:
+		angle = -max_angle
 	else:
-		angle = float(df['steering'].iloc[ind])
+		angle = 0
 	return angle
 
 def	draw_on_img():
@@ -135,23 +158,21 @@ def	draw_on_img():
 def draw_predict():
 	## Get prediction steering angle
 	md_img, _ = process_image(img_name, None, False)
-	pred_angle = model.predict(np.array([md_img]))[0][0]
-	if pred_angle > max_angle:
-		pred_angle = max_angle
-	elif pred_angle < -max_angle:
-		pred_angle = -max_angle
+	pred_prob = model.predict(np.array([md_img]))[0]
+	pred_angle = get_steering(np.argmax(pred_prob))
 
 	## Draw green prediction line
 	x_shift = 1.2 * r * sin(pred_angle)
 	y_shift = 1.2 * r * cos(pred_angle)
 	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(0,255,0),3)
-	return pred_angle
+	return pred_angle, pred_prob
 
 while tries < 10 and ind < sample_length:
 	# Measure time to keep certain drawing speed
 	t1 = time.time()
 	if t1 - t0 > 1.0 / args.fps:	
-		angle = get_steering(predict)
+		st_curr = int(df['command'].iloc[ind])
+		angle = get_steering(st_curr)
 		img_name = img_path + df['img_name'].iloc[ind]
 		img = cv2.imread(img_name, 1)
 		
@@ -163,22 +184,42 @@ while tries < 10 and ind < sample_length:
 			draw_on_img()
 
 			if predict:	
-				pred_angle = draw_predict()
+				pred_angle, pred_prob = draw_predict()
+				title_name = str(round(pred_prob[1], 2)) + "|" + str(round(pred_prob[0], 2)) +\
+				"|" + str(round(pred_prob[2], 2)) + "_" + df['img_name'].iloc[ind]
 				err += abs(pred_angle - angle)
 			else:
-				## Save img_name and angle to the list
-				sa_lst.append([df['img_name'].iloc[ind], df['datetime'].iloc[ind], angle])
+				
+				title_name = df['img_name'].iloc[ind]
 			
 			## Print img_name and angle to STDOUT and save to the list
-			print("%s, %s, %.2f" % (df['img_name'].iloc[ind], df['datetime'].iloc[ind], angle))
+			# print("%s, %s, %.2f" % (df['img_name'].iloc[ind], angle))
 			
 			## Show combined image
 			str_ind = str(ind)
 			if saving:
-				cv2.imwrite(out_dir + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
-			cv2.imshow(img_name, img)
-			if cv2.waitKey(int(100.0 / args.fps)) & 0xFF == ord('q'):
+				# cv2.imwrite(out_dir + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
+				cv2.imwrite(out_dir + title_name, img)
+
+			cv2.imshow(title_name, img)
+			if correct:
+				key = cv2.waitKey(0)
+				## Save img_name and angle to the list
+				if key & 0xFF == ord('a'):
+					sa_lst.append([df['img_name'].iloc[ind], 1])
+				elif key & 0xFF == ord('d'):
+					sa_lst.append([df['img_name'].iloc[ind], 2])
+				elif key & 0xFF == ord('w'):
+					sa_lst.append([df['img_name'].iloc[ind], 0])
+				else:
+					sa_lst.append([df['img_name'].iloc[ind], st_curr])
+			else:
+				key = cv2.waitKey(int(100.0 / args.fps))
+			
+			if key & 0xFF == ord('q'):
 				break
+			
+
 		else:
 			tries += 1
 		t0 = t1
@@ -189,8 +230,8 @@ if tries == 10:
 cv2.destroyAllWindows()
 
 # Save img_names and proper steering values to csv file
-if predict == False:
-	df = pd.DataFrame(sa_lst, columns=["img_name", "datetime", "steering_angle"])
-	df.to_csv(data_dir + args.img_dir + '_log.csv', index=False)
+if correct:
+	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
+	df.to_csv(data_dir + "c_" + args.img_dir + '_log.csv', index=False)
 else:
 	print("Total error: %f" % (err / float(ind)))

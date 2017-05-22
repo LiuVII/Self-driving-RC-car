@@ -17,17 +17,21 @@ from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import cv2
+from PIL import Image
 
 NUM_CLASSES = 3
 shapeX = 160
 shapeY = 120
-topY = shapeY // 3 
+topY = shapeY // 5
+# w_array = np.ones((3,3))
+# w_array[2,1] = 1.2
+# w_array[1,2] = 1.2
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
     if load and tr_model: return load_model(tr_model)
 
     # conv5x5_l, conv3x3_l, dense_layers = [16, 24], [36, 48], [512, 128, 16]
-    conv3x3_l, dense_layers = [24, 32, 40], [512, 64, 16]
+    conv3x3_l, dense_layers = [24, 32, 40, 48], [512, 64, 16]
     
     model = Sequential()
     model.add(Conv2D(16, (5, 5), activation='elu', input_shape=shape))
@@ -59,42 +63,25 @@ def get_X_y(data_file):
 
 def process_image(path, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    
-    # image = load_img(path)
-    # image = img_to_array(image)
-    # print(len(image), len(image[0]))
+    new_command = [command[0], command[1], command[2]]
+
     image = load_img(path, target_size=shape)
-    # image = img_to_array(image)
-    # print(len(image), len(image[0]))
-    # exit(0)
+
     if augment and random.random() < 0.25:
         image = random_darken(image)  # before numpy'd
     elif augment and random.random() < 0.25:
         image = random_brighten(image)  # before numpy'd
-    aimage = img_to_array(image)
-    augment = False    
-    if augment:
-        # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
-        if random.random() < 0.5:
-            
-            # t = random.random()
-            # print(image)
-            # print(len(image))
-            # print(len(image[0]))
-            aimage_top = aimage[:topY]
-            # print(len(image_top))
-            aimage_bot = aimage[topY:]
-            # print(len(image_bot))
-            aimage =np.concatenate((aimage_top, flip_axis(aimage_bot, 0)), axis=0)
-            # print(len(image))
-            # print(aimage)
-            # exit(0)
-            aimage = flip_axis(aimage, 1)
-            tmp = command[2]
-            command[2] = command[1]
-            command[1] = tmp
+    
+    if augment and random.random() < 0.5:
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)        
+        new_command = [command[0], command[2], command[1]]
+
+    aimage = img_to_array(image) 
+    # if augment:
+    #     # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
+
     aimage = aimage.astype(np.float32) / 255. - 0.5
-    return aimage, command
+    return aimage, new_command
 
 def random_darken(image):
     """Given an image (from Image.open), randomly darken a part of it."""
