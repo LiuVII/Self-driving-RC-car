@@ -30,6 +30,28 @@ max_angle = pi / 4.0
 key = 0
 shapeX = 160
 shapeY = 120
+num_reqs = 10
+v_width = 16.
+v_length = 24.
+track_map = np.array([[[10,0],[10,150]],
+    [[10,150],[61,193]],
+    [[61,193],[96,159]],
+    [[96,159],[96,75]],
+    [[96,159],[150,200]],
+    [[150,200],[200,70]],
+    [[150,200],[240,190]],
+    [[240,190],[280,150]],
+    [[280,150],[280,74]],
+    [[55,155],[55,70]],
+    [[55,70],[98,22]],
+    [[98,22],[145,59]],
+    [[145,59],[145,160]],
+    [[145,59],[200,17]],
+    [[200,17],[245,70]],
+    [[245,70],[245,154]],
+    [[245,70],[280,20]],
+    [[280,20],[320,86]],
+    [[320,86],[320,200]]])
 
 def parse_pckg(package):
 	# Below is example:
@@ -42,12 +64,11 @@ def parse_pckg(package):
 		return -1, -1, -1
 	x = int(package[pos_x + 4:pos_y])
 	y = int(package[pos_y + 4:pos_ye])
-	angle = int(package[pos_ang + 7:])
+	ang = int(package[pos_ang + 7:])
 	return x, y, ang
 
-def get_coords():
+def get_coords(num_reqs=num_reqs):
 	
-	num_reqs = 10
 	x_lst = np.array([])
 	y_lst = np.array([])
 	ang_Lst = np.array([])
@@ -66,7 +87,7 @@ def get_coords():
 		except:
 			count += 1
 
-	if count < num_reqs / 2:
+	if count >= num_reqs / 2:
 		print("package was lost")
 		return -1,-1,-1
 	x = np.argmax(np.bincount(x_Lst))
@@ -80,12 +101,10 @@ def ccw(A,B,C):
 def intersect(A,B,C,D):
         return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
-def check_position():
+def check_position(track_map=track_map, width=v_width, length=v_length):
 	x0, y0, ang = get_coords()
 	if x0 < 0 or y0 < 0:
 		return -1
-	width = 16.
-	length = 24.
 	xsh = width * math.sin(math.radians(ang)) / 2.
 	ysh = -width * math.cos(math.radians(ang)) / 2.
 	x1 = x - length * math.cos(math.radians(ang))
@@ -302,7 +321,7 @@ if __name__ == '__main__':
 		if not os.path.exists(img_dir):
 			os.makedirs(img_dir)
 
-	overlord_url = "http://smth"
+	overlord_url = "http://192.168.2.16"
 	actions = ['A', 'D', 'C', 'B']
 	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt' '/exp' + str(args.exp_time)]
 	clinks = [args.url + el for el in links]
