@@ -13,6 +13,7 @@ from math import pi
 import shutil
 from datetime import datetime
 import select
+import math
 
 from train import process_image, model
 
@@ -30,24 +31,71 @@ key = 0
 shapeX = 160
 shapeY = 120
 
-def record_data(img_name, act_i):
-	global correct
-	# Record data on left/right turns and forwards command
-	if act_i < 3:
-		if correct:
-			sa_lst.pop()
-			correct = False
-		ts = time.time()
-		st = datetime.fromtimestamp(ts).strftime('%Y%m%d-%H%M%S-%f')[:-4]
-		new_name = st + "_" + img_name.split("/")[-1]
-		print(img_name, new_name)
-		sa_lst.append([new_name, act_i])
-		shutil.copy(img_name, img_dir + new_name)
-	# Erase data on reverse commands
-	elif act_i == 3:
-		correct = True
-		sa_lst.pop()
+def parse_pckg(package):
+	# Below is example:
+	# CC block! sig: 12 (10 decimal) x: 127 y: 147 width: 91 height: 46 angle -1
+	pos_x = package.find(" x: ")
+	pos_y = package.find(" y: ", pos_x)
+	pos_ye = package.find(" width: ", pos_y)
+	pos_ang = package.find(" angle ", pos_ye)
+	if pos_x < 0 or pos_y < 0 or pos_ye < 0 or pos_ang < 0:
+		return -1, -1, -1
+	x = int(package[pos_x + 4:pos_y])
+	y = int(package[pos_y + 4:pos_ye])
+	angle = int(package[pos_ang + 7:])
+	return x, y, ang
+
+def get_coords():
 	
+	num_reqs = 10
+	x_lst = np.array([])
+	y_lst = np.array([])
+	ang_Lst = np.array([])
+	count = 0
+	for i in range(num_reqs):
+		try:
+			r = urllib2.urlopen(overlord_url, timeout=2)
+			package = r.read()
+			x, y, ang = parse_pckg(package)
+			if x < 0 or y < 0 or ang < 0:
+				count += 1
+				continue
+			np.append(x, x_lst)
+			np.append(y, y_lst)
+			np.append(ang, ang_lst)
+		except:
+			count += 1
+
+	if count < num_reqs / 2:
+		print("package was lost")
+		return -1,-1,-1
+	x = np.argmax(np.bincount(x_Lst))
+	y = np.argmax(np.bincount(y_Lst))
+	ang = np.argmax(np.bincount(ang_Lst))
+	return float(x), float(y), float(ang)
+
+def ccw(A,B,C):
+    return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
+
+def intersect(A,B,C,D):
+        return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
+def check_position():
+	x0, y0, ang = get_coords()
+	if x0 < 0 or y0 < 0:
+		return -1
+	width = 16.
+	length = 24.
+	xsh = width * math.sin(math.radians(ang)) / 2.
+	ysh = -width * math.cos(math.radians(ang)) / 2.
+	x1 = x - length * math.cos(math.radians(ang))
+	y1 = y + length * math.sin(math.radians(ang))
+	for segment in track_map:
+		if intersect((x0-xsh,y0-ysh), (x1+xsh, y1+ysh), segment[0], segment[1]):
+			return 0
+		if intersect((x0+xsh,y0+ysh), (x1-xsh, y1-ysh), segment[0], segment[1]):
+			return 0
+	return 1
 
 def display_img():
 	test = subprocess.check_output(fetch_last_img, shell=True)
@@ -61,14 +109,32 @@ def display_img():
 	print ("Error: couldn't get an image")
 	return ""
 
+def record_data(img_name, act_i):
+	global correct
+	# Record data on left/right turns and forwards command
+	if act_i < 3:
+		# if correct:
+		# 	sa_lst.pop()
+		# 	correct = False
+		ts = time.time()
+		st = datetime.fromtimestamp(ts).strftime('%Y%m%d-%H%M%S-%f')[:-4]
+		new_name = st + "_" + img_name.split("/")[-1]
+		print(img_name, new_name)
+		sa_lst.append([new_name, act_i])
+		shutil.copy(img_name, img_dir + new_name)
+	# Erase data on reverse commands
+	elif act_i < 6:
+		# correct = True
+		sa_lst.pop()
+
 def send_control(act_i, img_name):
 	global train
 	try:
 		print("Sending command %s" % links[act_i])
 		# os.system(clinks[act_i])
 		r = urllib2.urlopen(clinks[act_i], timeout=2)
-		print(r)
-		if train and act_i <= 3:
+		# print(r)
+		if train and act_i < 6:
 			record_data(img_name, act_i)
 		return 0
 	except:
@@ -77,6 +143,12 @@ def send_control(act_i, img_name):
 
 def maunal_drive(img_name):
 
+	res = check_position()
+	if res == 0:
+		print("Vehicle is out of bounds")
+	else if res == -1:
+		# If we cannot detect where we are
+		print("Error: cannot identify position")
 	getch.getch()
 	key = getch.getch()	
 	for act_i in range(len(actions)):
@@ -84,14 +156,42 @@ def maunal_drive(img_name):
 			res = send_control(act_i, img_name)
 			break
 
+def reverse_motion():
+	last_command = sa_lst[-1][-1]
+	block_lst[-1].append(last_command)
+	inv_command = last_command + 3
+	send_control(inv_command, img_name)
+
 def auto_drive(img_name):
 
-	md_img, _ = process_image(img_name, None, False)
-	pred_act = model.predict(np.array([md_img]))[0]
-	print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
-	act_i = np.argmax(pred_act)
-	send_control(act_i, img_name)
-	return pred_act, act_i
+	res = check_position()
+	if res == 1:
+		# If we are in the right track
+		if len(sa_lst) = len(block_lst):
+			block_lst.append([])
+		md_img, _ = process_image(img_name, None, False)
+		pred_act = model.predict(np.array([md_img]))[0]
+		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
+		act_i = np.argmax(pred_act)
+		while pred_act[act_i] >= 0 and act_i in block_lst[-1]:
+			pred_act[act_i] = -1.
+			act_i = np.argmax(pred_act)
+		if act_i == -1:
+			block_lst.pop()
+			reverse_motion()
+		else:
+			send_control(act_i, img_name)
+		return pred_act, act_i
+	else if res == -1:
+		# If we cannot detect where we are
+		print("Error: cannot identify position")
+		return -1, -1
+	else:
+		# If we are outside
+		try:
+			reverse_motion()
+		except:
+			print("Error: cannot reverse an action")
 
 def	drive(auto):
 	ot = 0
@@ -202,14 +302,16 @@ if __name__ == '__main__':
 		if not os.path.exists(img_dir):
 			os.makedirs(img_dir)
 
+	overlord_url = "http://smth"
 	actions = ['A', 'D', 'C', 'B']
-	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/exp' + str(args.exp_time)]
+	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt' '/exp' + str(args.exp_time)]
 	clinks = [args.url + el for el in links]
 	sa_lst = []
+	block_lst = []
 	correct = False
 	# Set expiration time for commands
 	exp_time = args.exp_time
-	if send_control(4, ""):
+	if send_control(6, ""):
 		print("Exiting")
 		exit(0)
 

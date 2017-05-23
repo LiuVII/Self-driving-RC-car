@@ -18,6 +18,7 @@ from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import cv2
 from PIL import Image
+from PIL import ImageOps
 
 NUM_CLASSES = 3
 shapeX = 160
@@ -63,10 +64,13 @@ def get_X_y(data_file):
 
 def process_image(path, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    new_command = [command[0], command[1], command[2]]
+    new_command = command
 
     image = load_img(path, target_size=shape)
 
+    # Balance histogram with cutoff 15%
+    image = PIL.ImageOps.autocontrast(image, 15)
+    
     if augment and random.random() < 0.25:
         image = random_darken(image)  # before numpy'd
     elif augment and random.random() < 0.25:
