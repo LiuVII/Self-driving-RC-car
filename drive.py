@@ -33,13 +33,15 @@ shapeY = 120
 num_reqs = 10
 v_width = 16.
 v_length = 24.
+overlord_url = "http://192.168.2.16"
 track_map = np.array([[[10,0],[10,150]],
     [[10,150],[61,193]],
     [[61,193],[96,159]],
     [[96,159],[96,75]],
     [[96,159],[150,200]],
-    [[150,200],[200,70]],
-    [[150,200],[240,190]],
+    [[150,200],[200,160]],
+    [[200,160],[200,70]],
+    [[200,160],[240,190]],
     [[240,190],[280,150]],
     [[280,150],[280,74]],
     [[55,155],[55,70]],
@@ -65,34 +67,45 @@ def parse_pckg(package):
 	x = int(package[pos_x + 4:pos_y])
 	y = int(package[pos_y + 4:pos_ye])
 	ang = int(package[pos_ang + 7:])
+	if ang < 0:
+		ang += 360
 	return x, y, ang
 
 def get_coords(num_reqs=num_reqs):
 	
-	x_lst = np.array([])
-	y_lst = np.array([])
-	ang_Lst = np.array([])
+	x_lst = []
+	y_lst = []
+	ang_lst = []
 	count = 0
 	for i in range(num_reqs):
 		try:
 			r = urllib2.urlopen(overlord_url, timeout=2)
 			package = r.read()
 			x, y, ang = parse_pckg(package)
-			if x < 0 or y < 0 or ang < 0:
+			if x < 0 or y < 0:
 				count += 1
 				continue
-			np.append(x, x_lst)
-			np.append(y, y_lst)
-			np.append(ang, ang_lst)
+			# print(x_lst)
+			x_lst.append(x)
+			# print(x_lst)
+			y_lst.append(y)
+			ang_lst.append(ang)
+			# print(x,y,ang)
 		except:
 			count += 1
 
-	if count >= num_reqs / 2:
+	print(x_lst, y_lst, ang_lst, count)
+	if count > num_reqs * 2 / 3:
 		print("package was lost")
 		return -1,-1,-1
-	x = np.argmax(np.bincount(x_Lst))
-	y = np.argmax(np.bincount(y_Lst))
-	ang = np.argmax(np.bincount(ang_Lst))
+	# x = np.argmax(np.bincount(x_lst))
+	# y = np.argmax(np.bincount(y_lst))
+	# ang = np.argmax(np.bincount(ang_lst))
+	# print(x,y,ang)
+	x = np.mean(x_lst)
+	y = np.mean(y_lst)
+	ang = np.mean(ang_lst)
+	print(x,y,ang)
 	return float(x), float(y), float(ang)
 
 def ccw(A,B,C):
@@ -107,8 +120,8 @@ def check_position(track_map=track_map, width=v_width, length=v_length):
 		return -1
 	xsh = width * math.sin(math.radians(ang)) / 2.
 	ysh = -width * math.cos(math.radians(ang)) / 2.
-	x1 = x - length * math.cos(math.radians(ang))
-	y1 = y + length * math.sin(math.radians(ang))
+	x1 = x0 - length * math.cos(math.radians(ang))
+	y1 = y0 + length * math.sin(math.radians(ang))
 	for segment in track_map:
 		if intersect((x0-xsh,y0-ysh), (x1+xsh, y1+ysh), segment[0], segment[1]):
 			return 0
@@ -165,7 +178,7 @@ def maunal_drive(img_name):
 	res = check_position()
 	if res == 0:
 		print("Vehicle is out of bounds")
-	else if res == -1:
+	elif res == -1:
 		# If we cannot detect where we are
 		print("Error: cannot identify position")
 	getch.getch()
@@ -186,7 +199,7 @@ def auto_drive(img_name):
 	res = check_position()
 	if res == 1:
 		# If we are in the right track
-		if len(sa_lst) = len(block_lst):
+		if len(sa_lst) == len(block_lst):
 			block_lst.append([])
 		md_img, _ = process_image(img_name, None, False)
 		pred_act = model.predict(np.array([md_img]))[0]
@@ -201,7 +214,7 @@ def auto_drive(img_name):
 		else:
 			send_control(act_i, img_name)
 		return pred_act, act_i
-	else if res == -1:
+	elif res == -1:
 		# If we cannot detect where we are
 		print("Error: cannot identify position")
 		return -1, -1
@@ -309,7 +322,7 @@ if __name__ == '__main__':
 	auto = False
 	if args.model:
 		shape = (shapeY, shapeX, 3)
-		model = model(True, shape, args.model)
+		model = model(True, shape, tr_model=args.model)
 		auto = args.auto
 		err = 0
 
@@ -320,10 +333,11 @@ if __name__ == '__main__':
 		data_dir = "./model_data/"
 		if not os.path.exists(img_dir):
 			os.makedirs(img_dir)
+		# if not args.model:
+		# 	model = model(load=False, shape)
 
-	overlord_url = "http://192.168.2.16"
 	actions = ['A', 'D', 'C', 'B']
-	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt' '/exp' + str(args.exp_time)]
+	links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time)]
 	clinks = [args.url + el for el in links]
 	sa_lst = []
 	block_lst = []
