@@ -19,6 +19,7 @@ from sklearn.model_selection import train_test_split
 import cv2
 from PIL import Image
 from PIL import ImageOps
+from skimage.exposure import equalize_adapthist
 
 NUM_CLASSES = 3
 shapeX = 160
@@ -62,15 +63,24 @@ def get_X_y(data_file):
             y.append(int(command))
     return X, to_categorical(y, num_classes=NUM_CLASSES)
 
+# def clahe_equalize(img):
+#     b, g, r = cv2.split(img)
+#     red = clahe.apply(r)
+#     green = clahe.apply(g)
+#     blue = clahe.apply(b)
+#     return cv2.merge((blue, green, red))
+
 def process_image(path, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
     new_command = command
 
     image = load_img(path, target_size=shape)
-
-    # Balance histogram with cutoff 15%
-    image = PIL.ImageOps.autocontrast(image, 15)
     
+    equ_type = random.random()
+    if not augment or equ_type >= 0.25:
+        # Balance histogram with cutoff 15%
+        image = ImageOps.autocontrast(image, 15)
+
     if augment and random.random() < 0.25:
         image = random_darken(image)  # before numpy'd
     elif augment and random.random() < 0.25:
@@ -80,11 +90,17 @@ def process_image(path, command, augment, shape=(shapeY, shapeX)):
         image = image.transpose(Image.FLIP_LEFT_RIGHT)        
         new_command = [command[0], command[2], command[1]]
 
-    aimage = img_to_array(image) 
+    aimage = img_to_array(image)
+    aimage = aimage.astype(np.float32) / 255.
+    if augment and equ_type < 0.25:
+        equalize_adapthist(aimage, clip_limit=0.05)
+        
+        
+    
     # if augment:
     #     # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
 
-    aimage = aimage.astype(np.float32) / 255. - 0.5
+    aimage = aimage - 0.5
     return aimage, new_command
 
 def random_darken(image):
@@ -191,7 +207,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-valid',
-        type=int,
+        type=float,
         default=0.15,
         help='Validation fraction of data. Default: 0.15'
     )

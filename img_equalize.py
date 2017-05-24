@@ -31,12 +31,53 @@ def combine_img(images):
 
 	return new_im
 
+def cEqualizeHist(img):
+	img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
 
-img = load_img(path)
-img_ac = PIL.ImageOps.autocontrast(img, cutoff)
-img_eq = PIL.ImageOps.equalize(img)
-n_img = combine_img([img, img_ac, img_eq])
-n_img.show(title="org | ac " + sys.argv[2] + " | equ")
+	# equalize the histogram of the Y channel
+	img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+	# convert the YUV image back to RGB format
+	return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+
+def histogram_equalize(img, clahe=False):
+    b, g, r = cv2.split(img)
+    red = cv2.equalizeHist(r)
+    green = cv2.equalizeHist(g)
+    blue = cv2.equalizeHist(b)
+    return cv2.merge((blue, green, red))
+
+def clahe_equalize(img):
+    b, g, r = cv2.split(img)
+    red = clahe.apply(r)
+    green = clahe.apply(g)
+    blue = clahe.apply(b)
+    return cv2.merge((blue, green, red))
+
+def pil_2_cv(img):
+	return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
+clahe = cv2.createCLAHE(clipLimit=5.0, tileGridSize=(2,2))
+for item in os.listdir(path):
+	if item.find(".jpg") == -1:
+		continue
+	img = load_img(os.path.join(path, item))
+	img_ac = PIL.ImageOps.autocontrast(img, cutoff)
+	# img_eq = PIL.ImageOps.equalize(img)
+	# n_img = combine_img([img, img_ac, img_eq])
+	cv_img = pil_2_cv(img)
+	cv_img_ac = pil_2_cv(img_ac)
+	# cv_img_eq = cEqualizeHist(cv_img)
+	cv_cl = clahe_equalize(cv_img)
+
+	cv_img_eq = histogram_equalize(cv_img)
+	# img = cv2.equalizeHist(img)
+	cv2.destroyAllWindows()
+	res = np.hstack((cv_img,cv_img_ac, cv_img_eq, cv_cl))
+	cv2.imshow(item, res)
+	if cv2.waitKey(0) & 0xFF == ord('q'):
+		break
+	# n_img.show(title="org | ac " + sys.argv[2] + " | equ")
 
 
 

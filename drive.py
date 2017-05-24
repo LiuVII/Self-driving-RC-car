@@ -14,7 +14,8 @@ import shutil
 from datetime import datetime
 import select
 import math
-
+from PIL import ImageOps
+from PIL import Image
 from train import process_image, model
 
 #Controls for wifi car v1
@@ -34,6 +35,7 @@ num_reqs = 10
 v_width = 16.
 v_length = 24.
 overlord_url = "http://192.168.2.16"
+err_marrgin = 5
 track_map = np.array([[[10,0],[10,150]],
     [[10,150],[61,193]],
     [[61,193],[96,159]],
@@ -63,7 +65,7 @@ def parse_pckg(package):
 	pos_ye = package.find(" width: ", pos_y)
 	pos_ang = package.find(" angle ", pos_ye)
 	if pos_x < 0 or pos_y < 0 or pos_ye < 0 or pos_ang < 0:
-		return -1, -1, -1
+		return -1, -1, 0
 	x = int(package[pos_x + 4:pos_y])
 	y = int(package[pos_y + 4:pos_ye])
 	ang = int(package[pos_ang + 7:])
@@ -79,18 +81,23 @@ def get_coords(num_reqs=num_reqs):
 	count = 0
 	for i in range(num_reqs):
 		try:
-			r = urllib2.urlopen(overlord_url, timeout=2)
+			r = urllib2.urlopen(overlord_url, timeout=1)
 			package = r.read()
-			x, y, ang = parse_pckg(package)
+			
+			if package == "NO DATA":
+				if not x_lst:
+					x, y, ang = -1, -1, 0
+				else:
+					x, y, ang = x_lst[-1], y_lst[-1], ang_lst[-1]
+			else:
+				x, y, ang = parse_pckg(package)
+			
 			if x < 0 or y < 0:
 				count += 1
 				continue
-			# print(x_lst)
 			x_lst.append(x)
-			# print(x_lst)
 			y_lst.append(y)
 			ang_lst.append(ang)
-			# print(x,y,ang)
 		except:
 			count += 1
 
@@ -132,10 +139,15 @@ def check_position(track_map=track_map, width=v_width, length=v_length):
 def display_img():
 	test = subprocess.check_output(fetch_last_img, shell=True)
 	img_name = args.st_dir + "/" + test.decode("utf-8").strip()
-	img = cv2.imread(img_name, 1)
-	if type(img) != type(None):
+	# img = cv2.imread(img_name, 1)
+	pil_img = Image.open(img_name)
+	if type(pil_img) != type(None):
+		pil_img = ImageOps.autocontrast(pil_img, 10)
+		# image = load_img(path, target_size=shape)
+		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+		# img = cv2.equalizeHist(img)
 		cv2.destroyAllWindows()
-		cv2.imshow(img_name, img)
+		cv2.imshow(img_name, cv_img)
 		cv2.waitKey(1)
 		return img_name
 	print ("Error: couldn't get an image")
@@ -175,7 +187,7 @@ def send_control(act_i, img_name):
 
 def maunal_drive(img_name):
 
-	res = check_position()
+	res = 1 if not detect else check_position()
 	if res == 0:
 		print("Vehicle is out of bounds")
 	elif res == -1:
@@ -196,7 +208,7 @@ def reverse_motion():
 
 def auto_drive(img_name):
 
-	res = check_position()
+	res = 1 if not detect else check_position()
 	if res == 1:
 		# If we are in the right track
 		if len(sa_lst) == len(block_lst):
@@ -242,7 +254,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time * 3:
+		if (ct - ot) * 1000 > exp_time + 1600:
 			drive = True
 		
 		if key == '\033':
@@ -311,6 +323,12 @@ if __name__ == '__main__':
 		help='Command expiration time. Default: 500ms',
 		default=500
 	)
+	parser.add_argument(
+		'-detect',
+		type=int,
+		help='Turn detection module on - 1/ off - 0. Default:0',
+		default=0
+	)
 	args = parser.parse_args()
 
 	if os.path.exists(args.st_dir):
@@ -341,6 +359,7 @@ if __name__ == '__main__':
 	clinks = [args.url + el for el in links]
 	sa_lst = []
 	block_lst = []
+	detect = args.detect
 	correct = False
 	# Set expiration time for commands
 	exp_time = args.exp_time
