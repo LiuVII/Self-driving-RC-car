@@ -72,6 +72,8 @@ void	parse(unsigned char buf[256])
 	{
 		dir = 1;
 		printf("Gear set to %d\n", gear);
+		if (!gear)
+			dir = 2;
 	}
 
 	//Check gas pedal
@@ -96,7 +98,7 @@ void	parse(unsigned char buf[256])
 
 	//Send command to car...
 	t1 = clock();
-	if (on && (t1 - t0) > 500)
+	if (on && (t1 - t0) > 500 && dir < 2)
 	{
 		char command[128] = "curl ";
 		strcat(command, ip);
