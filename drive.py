@@ -29,8 +29,11 @@ from train import process_image, model
 # left = '\033[D'
 max_angle = pi / 4.0
 key = 0
-shapeX = 160
-shapeY = 120
+oshapeX = 320
+oshapeY = 240
+shapeX = 200
+shapeY = 150
+cshapeY = shapeY - shapeY // 3
 num_reqs = 10
 v_width = 16.
 v_length = 24.
@@ -142,6 +145,7 @@ def display_img():
 	# img = cv2.imread(img_name, 1)
 	pil_img = Image.open(img_name)
 	if type(pil_img) != type(None):
+		pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
 		pil_img = ImageOps.autocontrast(pil_img, 10)
 		# image = load_img(path, target_size=shape)
 		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
@@ -254,7 +258,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time + 1600:
+		if (ct - ot) * 1000 > exp_time + 1200:
 			drive = True
 		
 		if key == '\033':
@@ -339,7 +343,7 @@ if __name__ == '__main__':
 	
 	auto = False
 	if args.model:
-		shape = (shapeY, shapeX, 3)
+		shape = (cshapeY, shapeX, 3)
 		model = model(True, shape, tr_model=args.model)
 		auto = args.auto
 		err = 0
