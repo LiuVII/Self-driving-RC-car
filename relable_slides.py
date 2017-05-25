@@ -89,6 +89,7 @@ st_min_val = 0.48
 st_mid_val = 1.51
 st_max_val = 2.90
 st_curr = 0
+def_exp = 0.5
 
 # Internal params
 tries = 0
@@ -97,6 +98,7 @@ r = float(height) / 4.0
 r_sq = r * r
 d = 2 * r
 max_angle = pi / 4.0
+half_angle = max_angle / 2.0
 
 # Read csv from file into dataframe
 # if predict == False:
@@ -105,7 +107,7 @@ max_angle = pi / 4.0
 # 	ind = 0
 # else:
 df = pd.read_csv(data_dir + args.img_dir +\
-	'_log.csv' , names=['img_name', 'command'])
+	'_log.csv' , names=['img_name', 'command', 'exp'])
 ind = 1
 sa_lst = []
 sample_length = len(df)
@@ -133,16 +135,16 @@ sample_length = len(df)
 # 		angle = float(df['command'].iloc[ind])
 # 	return angle
 
-def get_steering(st_curr):
+def get_steering(st_curr, exp=0.5):
 	if st_curr == 1:
-		angle = max_angle
+		angle = max_angle * exp / def_exp
 	elif st_curr == 2:
-		angle = -max_angle
+		angle = -max_angle * exp / def_exp
 	else:
 		angle = 0
 	return angle
 
-def	draw_on_img():
+def	draw_on_img(angle):
 	## Clear screen
 	cv2.destroyAllWindows()
 	
@@ -151,8 +153,11 @@ def	draw_on_img():
 	cv2.line(img,(int(width / 2 + r), int(height - r)),(width // 2, height),(0,0,255),5)
 	
 	## Draw blue label steering line
-	x_shift = r * sin(angle)
-	y_shift = r * cos(angle)
+	# x_shift = r * sin(angle) * exp / def_exp
+	# y_shift = r * cos(angle) * exp / def_exp
+	print(r, angle, width, height)
+	x_shift = 1.2 * r * sin(angle)
+	y_shift = 1.2 * r * cos(angle)
 	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(255,0,0),5)
 
 def draw_predict():
@@ -162,9 +167,9 @@ def draw_predict():
 	pred_angle = get_steering(np.argmax(pred_prob))
 
 	## Draw green prediction line
-	x_shift = 1.2 * r * sin(pred_angle)
-	y_shift = 1.2 * r * cos(pred_angle)
-	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(0,255,0),3)
+	x_shift = r * sin(pred_angle)
+	y_shift = r * cos(pred_angle)
+	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(0,255,0),2)
 	return pred_angle, pred_prob
 
 while tries < 10 and ind < sample_length:
@@ -172,17 +177,18 @@ while tries < 10 and ind < sample_length:
 	t1 = time.time()
 	if t1 - t0 > 1.0 / args.fps:	
 		st_curr = int(df['command'].iloc[ind])
-		angle = get_steering(st_curr)
+		exp = 0.5 if pd.isnull(df['exp'].iloc[ind]) else float(df['exp'].iloc[ind])
+		angle = get_steering(st_curr, exp)
 		img_name = img_path + df['img_name'].iloc[ind]
 		img = cv2.imread(img_name, 1)
+		
 		
 		## If image is valid draw and display, else try again and inct tries counter
 		if type(img) != type(None):
 			tries = 0
 			
 			## Draw limits and control label
-			draw_on_img()
-
+			draw_on_img(angle)
 			if predict:	
 				pred_angle, pred_prob = draw_predict()
 				title_name = str(round(pred_prob[1], 2)) + "|" + str(round(pred_prob[0], 2)) +\
@@ -191,7 +197,7 @@ while tries < 10 and ind < sample_length:
 			else:
 				
 				title_name = df['img_name'].iloc[ind]
-			
+
 			## Print img_name and angle to STDOUT and save to the list
 			# print("%s, %s, %.2f" % (df['img_name'].iloc[ind], angle))
 			
@@ -201,24 +207,31 @@ while tries < 10 and ind < sample_length:
 				# cv2.imwrite(out_dir + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
 				cv2.imwrite(out_dir + title_name, img)
 
-			cv2.imshow(title_name, img)
+			cv2.imshow(title_name, cv2.resize(img, (480, 360)))
+			cv2.moveWindow(title_name, 600, 300)
 			if correct:
 				key = cv2.waitKey(0)
 				## Save img_name and angle to the list
 				if key & 0xFF == ord('a'):
-					sa_lst.append([df['img_name'].iloc[ind], 1])
-				elif key & 0xFF == ord('d'):
-					sa_lst.append([df['img_name'].iloc[ind], 2])
+					sa_lst.append([df['img_name'].iloc[ind], 1, 0.5])
+				elif key & 0xFF == ord('q'):
+					sa_lst.append([df['img_name'].iloc[ind], 1, 0.25])
 				elif key & 0xFF == ord('w'):
-					sa_lst.append([df['img_name'].iloc[ind], 0])
+					sa_lst.append([df['img_name'].iloc[ind], 0, 0.5])
+				elif key & 0xFF == ord('s'):
+					sa_lst.append([df['img_name'].iloc[ind], 0, 0.25])
+				elif key & 0xFF == ord('d'):
+					sa_lst.append([df['img_name'].iloc[ind], 2, 0.5])
+				elif key & 0xFF == ord('e'):
+					sa_lst.append([df['img_name'].iloc[ind], 2, 0.25])
 				elif key & 0xFF == ord('x'):
 					pass
 				else:
-					sa_lst.append([df['img_name'].iloc[ind], st_curr])
+					sa_lst.append([df['img_name'].iloc[ind], st_curr, exp])
 			else:
 				key = cv2.waitKey(int(100.0 / args.fps))
 			
-			if key & 0xFF == ord('q'):
+			if key & 0xFF == 27:
 				break
 			
 
@@ -233,7 +246,7 @@ cv2.destroyAllWindows()
 
 # Save img_names and proper steering values to csv file
 if correct:
-	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
-	df.to_csv(data_dir + args.img_dir + '_log.csv', index=False)
+	df = pd.DataFrame(sa_lst, columns=["img_name", "command", "exp"])
+	df.to_csv(data_dir + "c_" + args.img_dir + '_log.csv', index=False)
 else:
 	print("Total error: %f" % (err / float(ind)))

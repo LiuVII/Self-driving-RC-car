@@ -57,9 +57,10 @@ def clahe_equalize(img):
 def pil_2_cv(img):
 	return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-clahe = cv2.createCLAHE(clipLimit=5.0, tileGridSize=(2,2))
+clahe = cv2.createCLAHE(clipLimit=5.0, tileGridSize=(4,4))
 for item in os.listdir(path):
 	if item.find(".jpg") == -1:
+		print("was not found")
 		continue
 	img = load_img(os.path.join(path, item))
 	img_ac = PIL.ImageOps.autocontrast(img, cutoff)
@@ -74,7 +75,8 @@ for item in os.listdir(path):
 	# img = cv2.equalizeHist(img)
 	cv2.destroyAllWindows()
 	res = np.hstack((cv_img,cv_img_ac, cv_img_eq, cv_cl))
-	cv2.imshow(item, res)
+	width, height, channels = res.shape
+	cv2.imshow(item, cv2.resize(res, (height / 3, width / 3)) )
 	if cv2.waitKey(0) & 0xFF == ord('q'):
 		break
 	# n_img.show(title="org | ac " + sys.argv[2] + " | equ")
