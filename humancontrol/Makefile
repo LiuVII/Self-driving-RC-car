@@ -10,7 +10,7 @@ SRC = hid.c wheel.c
 all: $(NAME)
 
 $(NAME):
-	@$(CC) $(LIB) $(INC) $(SRC) -o $(NAME)
+	@$(CC) $(LIB) $(INC) $(addprefix "src/", $(SRC)) -o $(NAME)
 	@echo "wheeltest created"
 
 test: $(NAME)
