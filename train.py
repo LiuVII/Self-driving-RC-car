@@ -18,13 +18,16 @@ from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import cv2
 from PIL import Image
+import PIL
 from PIL import ImageOps
 from skimage.exposure import equalize_adapthist
 
 NUM_CLASSES = 3
-shapeX = 160
-shapeY = 120
+# shapeX = 160
+shapeX = 200
+shapeY = 150
 topY = shapeY // 5
+cshapeY = shapeY - shapeY // 3
 # w_array = np.ones((3,3))
 # w_array[2,1] = 1.2
 # w_array[1,2] = 1.2
@@ -75,7 +78,8 @@ def process_image(path, command, augment, shape=(shapeY, shapeX)):
     new_command = command
 
     image = load_img(path, target_size=shape)
-    
+    image = image.crop((0, shapeY // 3, shapeX, shapeY))
+    # random.seed(random.randint(0, 9001))
     equ_type = random.random()
     if not augment or equ_type >= 0.25:
         # Balance histogram with cutoff 15%
@@ -108,6 +112,7 @@ def random_darken(image):
     w, h = image.size
 
     # Make a random box.
+    # random.seed(random.randint(0, 9001))
     x1, y1 = random.randint(0, w), random.randint(0, h)
     x2, y2 = random.randint(x1, w), random.randint(y1, h)
 
@@ -123,6 +128,7 @@ def random_brighten(image):
     w, h = image.size
 
     # Make a random box.
+    # random.seed(random.randint(0, 9001))
     x1, y1 = random.randint(0, w), random.randint(0, h)
     x2, y2 = random.randint(x1, w), random.randint(y1, h)
 
@@ -138,6 +144,7 @@ def _generator(batch_size, classes, X, y, augment):
     while 1:
         batch_X, batch_y = [], []
         for i in range(batch_size):
+            # random.seed(random.randint(0, 9001))
             class_i = random.randint(0, NUM_CLASSES - 1)
             # sample_index = random.randint(0, len(classes[class_i]) - 1)
             sample_index = random.choice(classes[class_i])
@@ -150,9 +157,9 @@ def _generator(batch_size, classes, X, y, augment):
 def train(model_name, val_split, epoch_num, step_num):
     """Load our network and our data, fit the model, save it."""
     if model_name:
-        net = model(load=True, shape=(shapeY, shapeX, 3), tr_model=model_name)
+        net = model(load=True, shape=(cshapeY, shapeX, 3), tr_model=model_name)
     else:
-        net = model(load=False, shape=(shapeY, shapeX, 3))
+        net = model(load=False, shape=(cshapeY, shapeX, 3))
     net.summary()
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
     

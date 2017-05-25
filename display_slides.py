@@ -234,6 +234,6 @@ cv2.destroyAllWindows()
 # Save img_names and proper steering values to csv file
 if correct:
 	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
-	df.to_csv(data_dir + args.img_dir + '_log.csv', index=False)
+	df.to_csv(data_dir + "c_" + args.img_dir + '_log.csv', index=False)
 else:
 	print("Total error: %f" % (err / float(ind)))
