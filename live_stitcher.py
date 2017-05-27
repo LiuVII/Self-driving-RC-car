@@ -30,9 +30,8 @@ def stitch(img_l, img_r, output_name):
     new_im.save(output_name)
 
 def check_valid(out_name):
-    img = Image.open(out_name)
-
     try:
+        img = Image.open(out_name)
         img.load()
         return True
     except:
@@ -58,6 +57,8 @@ def live_stitcher(img_dir):
     img_left = os.path.join(left, img_left).strip()
     img_right = os.path.join(right, img_right).strip()
 
+    # print last_left, last_right
+    # print img_left, img_right
     # if file a file has been used before
     # return None as to not recreate stitched image
     if last_left == img_left or last_right == img_right:
@@ -72,6 +73,4 @@ def live_stitcher(img_dir):
     stitch(img_left, img_right, out_name)
     last_left = img_left
     last_right = img_right
-    while not check_valid(out_name):
-        continue
     return out_name
