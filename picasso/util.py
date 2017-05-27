@@ -1,58 +1,54 @@
-from PIL import Image
-from operator import itemgetter
-import numpy as np
 from keras.applications.imagenet_utils import (decode_predictions,
                                                preprocess_input)
+import keras.applications.imagenet_utils
+from keras.preprocessing.image import img_to_array, load_img
+from PIL import Image
+import numpy as np
+from operator import itemgetter
+from PIL import ImageOps
 
-MODEL_DIM = (160, 120, 3)
+shapeX = 200
+shapeY = 150
+cshapeY = shapeY - shapeY // 3
+MODEL_SHAPE = (cshapeY, shapeX, 3)
 
-# def preprocess(targets):
-#     image_arrays = []
-#     for target in targets:
-#         im = target.resize(MODEL_DIM[:2], Image.ANTIALIAS)
-#         im = im.convert('RGB')
-#         arr = np.array(im).astype('float32')
-#         image_arrays.append(arr)
-
-#     all_targets = np.array(image_arrays)
-#     return preprocess_input(all_targets)
-
+def process_image(image, shape=(shapeY, shapeX)):
+    """Process and augment an image."""
+    aimage = img_to_array(image)
+    aimage = aimage.astype(np.float32) / 255.
+    aimage = aimage - 0.5
+    return aimage
 
 def preprocess(targets):
-    """Turn images into computation inputs
-    Converts an iterable of PIL Images into a suitably-sized numpy array which
-    can be used as an input to the evaluation portion of the Keras/tensorflow
-    graph.
-    Args:
-        targets (list of Images): a list of PIL Image objects
-    Returns:
-        array (float32)
-    """
     image_arrays = []
     for target in targets:
-        im = target.convert('L')
-        im = im.resize(MODEL_DIM[:2], Image.ANTIALIAS)
-        arr = np.array(im)
+        print(target, target.size)
+        im = target.resize((shapeY, shapeX), Image.ANTIALIAS)
+        arr = process_image(im)
         # im = im.convert('RGB')
         # arr = np.array(im).astype('float32')
+        # print(arr)
         image_arrays.append(arr)
 
     all_targets = np.array(image_arrays)
+    # print(all_targets)
+    # return preprocess_input(all_targets)
     return all_targets.reshape(len(all_targets),
-                               MODEL_DIM[0],
-                               MODEL_DIM[1], 1).astype('float32') / 255
+                               MODEL_SHAPE[0],
+                               MODEL_SHAPE[1], MODEL_SHAPE[2]).astype('float32')
 
 
 def postprocess(output_arr):
     images = []
     for row in output_arr:
-        im_array = row.reshape(MODEL_DIM[:2])
+        # print(im_array, im_array.shape)
+        im_array = row.reshape(MODEL_SHAPE[:2])
         images.append(im_array)
 
     return images
 
 
-# def prob_decode(probability_array, top=3):
+# def prob_decode(probability_array, top=5):
 #     r = decode_predictions(probability_array, top=top)
 #     results = [
 #         [{'code': entry[0],
@@ -75,18 +71,21 @@ def postprocess(output_arr):
 #                      )}
 #             )
 #     return results
-
-def prob_decode(probability_array, top=3):
+def prob_decode(probability_array, top=5):
     """Provide class information from output probabilities
+
     Gives the visualization additional context for the computed class
     probabilities.
+
     Args:
         probability_array (array): class probabilities
         top (int): number of class entries to return. Useful for limiting
             output in models with many classes. Defaults to 5.
+
     Returns:
         result list of  dict in the format [{'index': class_index, 'name':
             class_name, 'prob': class_probability}, ...]
+
     """
     results = []
     for row in probability_array:
