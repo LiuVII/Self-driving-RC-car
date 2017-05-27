@@ -11,8 +11,9 @@ shapeX = 200
 shapeY = 150
 cshapeY = shapeY - shapeY // 3
 MODEL_SHAPE = (cshapeY, shapeX, 3)
+actions = ['F', 'L', 'R']
 
-def process_image(image, shape=(shapeY, shapeX)):
+def process_image(image):
     """Process and augment an image."""
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
@@ -22,15 +23,17 @@ def process_image(image, shape=(shapeY, shapeX)):
 def preprocess(targets):
     image_arrays = []
     for target in targets:
-        print(target, target.size)
-        im = target.resize((shapeY, shapeX), Image.ANTIALIAS)
+        # print(target, target.size)
+        im = target.resize((cshapeY, shapeX), Image.ANTIALIAS)
         arr = process_image(im)
         # im = im.convert('RGB')
         # arr = np.array(im).astype('float32')
         # print(arr)
+        print(arr.shape)
         image_arrays.append(arr)
 
     all_targets = np.array(image_arrays)
+    # print(all_targets.shape)
     # print(all_targets)
     # return preprocess_input(all_targets)
     return all_targets.reshape(len(all_targets),
@@ -92,7 +95,7 @@ def prob_decode(probability_array, top=5):
         entries = []
         for i, prob in enumerate(row):
             entries.append({'index': i,
-                            'name': str(i),
+                            'name': actions[i],
                             'prob': prob})
 
         entries = sorted(entries,
