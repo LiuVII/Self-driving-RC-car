@@ -17,6 +17,7 @@ import math
 from PIL import ImageOps
 from PIL import Image
 from train import process_image, model
+import live_stitcher
 
 #Controls for wifi car v1
 #pip3 install getch
@@ -77,7 +78,7 @@ def parse_pckg(package):
 	return x, y, ang
 
 def get_coords(num_reqs=num_reqs):
-	
+
 	x_lst = []
 	y_lst = []
 	ang_lst = []
@@ -86,7 +87,7 @@ def get_coords(num_reqs=num_reqs):
 		try:
 			r = urllib2.urlopen(overlord_url, timeout=1)
 			package = r.read()
-			
+
 			if package == "NO DATA":
 				if not x_lst:
 					x, y, ang = -1, -1, 0
@@ -94,7 +95,7 @@ def get_coords(num_reqs=num_reqs):
 					x, y, ang = x_lst[-1], y_lst[-1], ang_lst[-1]
 			else:
 				x, y, ang = parse_pckg(package)
-			
+
 			if x < 0 or y < 0:
 				count += 1
 				continue
@@ -140,8 +141,16 @@ def check_position(track_map=track_map, width=v_width, length=v_length):
 	return 1
 
 def display_img():
-	test = subprocess.check_output(fetch_last_img, shell=True)
-	img_name = args.st_dir + "/" + test.decode("utf-8").strip()
+	if not args.multi:
+		test = subprocess.check_output(fetch_last_img, shell=True)
+		img_name = args.st_dir + "/" + test.decode("utf-8").strip()
+	else:
+		####### get stitched image here
+		img_name = live_stitcher.live_stitcher(args.st_dir)
+		while img_name is None:
+			img_name = live_stitcher.live_stitcher(args.st_dir)
+		######
+
 	# img = cv2.imread(img_name, 1)
 	pil_img = Image.open(img_name)
 	if type(pil_img) != type(None):
@@ -198,7 +207,7 @@ def maunal_drive(img_name):
 		# If we cannot detect where we are
 		print("Error: cannot identify position")
 	getch.getch()
-	key = getch.getch()	
+	key = getch.getch()
 	for act_i in range(len(actions)):
 		if key == actions[act_i]:
 			res = send_control(act_i, img_name)
@@ -254,13 +263,14 @@ def	drive(auto):
 			key = sys.stdin.read(1)
 			if not key:
 				exit(0)
+
 		img_name = display_img()
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
 		if (ct - ot) * 1000 > exp_time + 1200:
 			drive = True
-		
+
 		if key == '\033':
 			if auto:
 				print("Autopilot disengaged")
@@ -287,7 +297,7 @@ def	drive(auto):
 			ot = ct
 			img_name = 0
 		key = 0
-		
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Driver')
@@ -333,6 +343,12 @@ if __name__ == '__main__':
 		help='Turn detection module on - 1/ off - 0. Default:0',
 		default=0
 	)
+	parser.add_argument(
+		'-multi',
+		type=int,
+		help="Turn multi-cam function on - 1/ off - 0. Default:0",
+		default=0
+	)
 	args = parser.parse_args()
 
 	if os.path.exists(args.st_dir):
@@ -340,7 +356,7 @@ if __name__ == '__main__':
 	else:
 		print("Error: streaming directory %s doesn't exist" % args.st_dir)
 		exit(1)
-	
+
 	auto = False
 	if args.model:
 		shape = (cshapeY, shapeX, 3)
@@ -375,4 +391,3 @@ if __name__ == '__main__':
 	if train:
 		df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
 		df.to_csv(data_dir + args.train + '_log.csv', index=False)
-	
