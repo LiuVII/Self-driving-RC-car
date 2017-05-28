@@ -75,12 +75,12 @@ def live_stitcher(img_dir):
 	last_right = img_right
 	return out_name
 
-if __name__ == "__main__":
-	while True:
-		img_name = live_stitcher("./st_dir")
-		while img_name is None:
-			print "getting image"
-			img_name = live_stitcher("./st_dir")
-		while not check_valid(img_name):
-			print "not readable yet %s" % img_name
-			continue
+# if __name__ == "__main__":
+# 	while True:
+# 		img_name = live_stitcher("./st_dir")
+# 		while img_name is None:
+# 			print "getting image"
+# 			img_name = live_stitcher("./st_dir")
+# 		while not check_valid(img_name):
+# 			print "not readable yet %s" % img_name
+# 			continue
