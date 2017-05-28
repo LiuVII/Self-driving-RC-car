@@ -216,7 +216,7 @@ while tries < 10 and ind < sample_length:
 				for i in range(NUM_CLASSES):
 					avg_angle += pred_prob[i] * get_steering(i)
 				near_miss = abs(pred_angle - avg_angle) / max_angle
-				if near_miss > 0.33 or correct:
+				if near_miss > 0.66 or correct:
 					# fimg = cv2.flip(img, 1)
 					# cv2.imshow(title_name, np.hstack((img, fimg)))
 					cv2.imshow(title_name, img)
@@ -226,7 +226,7 @@ while tries < 10 and ind < sample_length:
 				cv2.imshow(title_name, img)
 			
 			key = 0
-			if correct or (detect and near_miss > 0.33):
+			if correct or (detect and near_miss > 0.66):
 				key = cv2.waitKey(0)
 				## Save img_name and angle to the list
 				if key & 0xFF == ord('a'):
