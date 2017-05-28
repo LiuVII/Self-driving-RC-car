@@ -24,17 +24,15 @@ import live_stitcher
 #pip install https://pypi.python.org/packages/source/g/getch/getch-1.0-python2.tar.gz#\
 #md5=586ea0f1f16aa094ff6a30736ba03c50
 
-# up = '\033[A'
-# down = '\033[B'
-# right = '\033[C'
-# left = '\033[D'
+oshapeX = 640
+oshapeY = 240
+NUM_CLASSES = 3
+shapeX = 320
+shapeY = 120
+cshapeY = 80
+
 max_angle = pi / 4.0
 key = 0
-oshapeX = 320
-oshapeY = 240
-shapeX = 200
-shapeY = 150
-cshapeY = shapeY - shapeY // 3
 num_reqs = 10
 v_width = 16.
 v_length = 24.

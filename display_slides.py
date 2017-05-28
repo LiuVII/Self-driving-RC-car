@@ -13,9 +13,12 @@ from PIL import Image
 from train import process_image, model
 
 
+oshapeX = 640
+oshapeY = 240
 NUM_CLASSES = 3
-shapeX = 160
+shapeX = 320
 shapeY = 120
+cshapeY = 80
 
 
 parser = argparse.ArgumentParser(description='Recorder')
@@ -28,7 +31,7 @@ parser.add_argument(
 parser.add_argument(
 	'--fps',
 	type=int,
-	default=5,
+	default=30,
 	help='FPS (Frames per second) setting for the video.'
 )
 parser.add_argument(
@@ -49,7 +52,12 @@ parser.add_argument(
 	default=0,
 	help='Correct recorded csv data 0 - off/ 1 - on.'
 )
-
+parser.add_argument(
+	'-detect',
+	type=int,
+	default=0,
+	help='Detection of data close to misclassification 0 - off/ 1 - on.'
+)
 
 args = parser.parse_args()
 
@@ -72,17 +80,16 @@ if not os.path.exists(data_dir):
 
 # Model params
 predict = False
+detect = False
 if args.model:
 	shape = (shapeY, shapeX, 3)
 	model = model(True, shape, args.model)
 	predict = True
+	if args.detect:
+		detect = True
 	err = 0
 
 correct = args.correct
-
-# Image flow params
-width = 320
-height = 240
 
 # Init steering params
 st_min_val = 0.48
@@ -93,7 +100,7 @@ st_curr = 0
 # Internal params
 tries = 0
 t0 = 0.0
-r = float(height) / 4.0
+r = float(oshapeY) / 4.0
 r_sq = r * r
 d = 2 * r
 max_angle = pi / 4.0
@@ -147,13 +154,13 @@ def	draw_on_img():
 	cv2.destroyAllWindows()
 	
 	## Draw red limits
-	cv2.line(img,(int(width / 2 - r), int(height - r)),(width // 2, height),(0,0,255),5)
-	cv2.line(img,(int(width / 2 + r), int(height - r)),(width // 2, height),(0,0,255),5)
+	cv2.line(img,(int(oshapeX / 2 - r), int(oshapeY - r)),(oshapeX // 2, oshapeY),(0,0,255),5)
+	cv2.line(img,(int(oshapeX / 2 + r), int(oshapeY - r)),(oshapeX // 2, oshapeY),(0,0,255),5)
 	
 	## Draw blue label steering line
 	x_shift = r * sin(angle)
 	y_shift = r * cos(angle)
-	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(255,0,0),5)
+	cv2.line(img,(int(oshapeX / 2 - x_shift), int(oshapeY - y_shift)),(oshapeX // 2, oshapeY),(255,0,0),5)
 
 def draw_predict():
 	## Get prediction steering angle
@@ -164,13 +171,14 @@ def draw_predict():
 	## Draw green prediction line
 	x_shift = 1.2 * r * sin(pred_angle)
 	y_shift = 1.2 * r * cos(pred_angle)
-	cv2.line(img,(int(width / 2 - x_shift), int(height - y_shift)),(width // 2, height),(0,255,0),3)
+	cv2.line(img,(int(oshapeX / 2 - x_shift), int(oshapeY - y_shift)),(oshapeX // 2, oshapeY),(0,255,0),3)
 	return pred_angle, pred_prob
 
 while tries < 10 and ind < sample_length:
 	# Measure time to keep certain drawing speed
 	t1 = time.time()
 	if t1 - t0 > 1.0 / args.fps:	
+		print("Index: %d out of %d" % (ind, sample_length))
 		st_curr = int(df['command'].iloc[ind])
 		angle = get_steering(st_curr)
 		img_name = img_path + df['img_name'].iloc[ind]
@@ -201,8 +209,24 @@ while tries < 10 and ind < sample_length:
 				# cv2.imwrite(out_dir + "IMG_" + (5 - len(str_ind))*'0' + str_ind + ".jpg", img)
 				cv2.imwrite(out_dir + title_name, img)
 
-			cv2.imshow(title_name, img)
-			if correct:
+			# Detection of data close to misclassification
+			near_miss = 0
+			if detect:
+				avg_angle = 0
+				for i in range(NUM_CLASSES):
+					avg_angle += pred_prob[i] * get_steering(i)
+				near_miss = abs(pred_angle - avg_angle) / max_angle
+				if near_miss > 0.33 or correct:
+					# fimg = cv2.flip(img, 1)
+					# cv2.imshow(title_name, np.hstack((img, fimg)))
+					cv2.imshow(title_name, img)
+				else:
+					sa_lst.append([df['img_name'].iloc[ind], st_curr])
+			else:
+				cv2.imshow(title_name, img)
+			
+			key = 0
+			if correct or (detect and near_miss > 0.33):
 				key = cv2.waitKey(0)
 				## Save img_name and angle to the list
 				if key & 0xFF == ord('a'):
@@ -215,12 +239,11 @@ while tries < 10 and ind < sample_length:
 					pass
 				else:
 					sa_lst.append([df['img_name'].iloc[ind], st_curr])
-			else:
+			elif not detect:
 				key = cv2.waitKey(int(100.0 / args.fps))
 			
 			if key & 0xFF == ord('q'):
 				break
-			
 
 		else:
 			tries += 1
@@ -235,5 +258,8 @@ cv2.destroyAllWindows()
 if correct:
 	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
 	df.to_csv(data_dir + "c_" + args.img_dir + '_log.csv', index=False)
+elif detect:
+	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
+	df.to_csv(data_dir + "d_" + args.img_dir + '_log.csv', index=False)
 else:
 	print("Total error: %f" % (err / float(ind)))

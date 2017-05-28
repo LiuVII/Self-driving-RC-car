@@ -22,15 +22,13 @@ import PIL
 from PIL import ImageOps
 from skimage.exposure import equalize_adapthist
 
+oshapeX = 640
+oshapeY = 240
 NUM_CLASSES = 3
-# shapeX = 160
-shapeX = 200
-shapeY = 150
-topY = shapeY // 5
-cshapeY = shapeY - shapeY // 3
-# w_array = np.ones((3,3))
-# w_array[2,1] = 1.2
-# w_array[1,2] = 1.2
+shapeX = 320
+shapeY = 120
+cshapeY = 80
+
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
     if load and tr_model: return load_model(tr_model)
@@ -44,9 +42,10 @@ def model(load, shape, tr_model=None):
     # for cl in conv5x5_l:
     #     model.add(Conv2D(cl, (5, 5), activation='elu'))
     #     model.add(MaxPooling2D())
-    for cl in conv3x3_l:
-        model.add(Conv2D(cl, (3, 3), activation='elu'))
-        model.add(MaxPooling2D())
+    for i in range(len(conv3x3_l)):
+        model.add(Conv2D(conv3x3_l[i], (3, 3), activation='elu'))
+        if i < len(conv3x3_l) - 1:
+            model.add(MaxPooling2D())
     model.add(Flatten())
     for dl in dense_layers:
         model.add(Dense(dl, activation='elu'))

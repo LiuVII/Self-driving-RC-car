@@ -7,9 +7,12 @@ import numpy as np
 from operator import itemgetter
 from PIL import ImageOps
 
-shapeX = 200
-shapeY = 150
-cshapeY = shapeY - shapeY // 3
+oshapeX = 640
+oshapeY = 240
+NUM_CLASSES = 3
+shapeX = 320
+shapeY = 120
+cshapeY = 80
 MODEL_SHAPE = (cshapeY, shapeX, 3)
 actions = ['F', 'L', 'R']
 

@@ -5,9 +5,12 @@ from PIL import Image
 from PIL import ImageOps
 from keras.preprocessing.image import img_to_array, load_img
 
-shapeX = 200
-shapeY = 150
-cshapeY = shapeY - shapeY // 3
+oshapeX = 640
+oshapeY = 240
+NUM_CLASSES = 3
+shapeX = 320
+shapeY = 120
+cshapeY = 80
 
 def process_image(path, shape=(shapeY, shapeX)):
 	"""Process and augment an image."""
@@ -34,7 +37,10 @@ if __name__ == '__main__':
 	if not os.path.exists(out_path):
 		os.makedirs(out_path)
 	for item in os.listdir(path):
-		img_path = os.path.join(path, item)
-		out_img_path = os.path.join(out_path, item)
-		mod_img = process_image(img_path)
-		mod_img.save(out_img_path)
+		try:
+			img_path = os.path.join(path, item)
+			out_img_path = os.path.join(out_path, item)
+			mod_img = process_image(img_path)
+			mod_img.save(out_img_path)
+		except:
+			continue
