@@ -144,9 +144,12 @@ def display_img():
 		img_name = args.st_dir + "/" + test.decode("utf-8").strip()
 	else:
 		####### get stitched image here
+		# print "using multi"
 		img_name = live_stitcher.live_stitcher(args.st_dir)
 		while img_name is None:
 			img_name = live_stitcher.live_stitcher(args.st_dir)
+		while not live_stitcher.check_valid(img_name):
+			continue
 		######
 
 	# img = cv2.imread(img_name, 1)
