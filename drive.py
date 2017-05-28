@@ -150,7 +150,7 @@ def display_img():
 		img_name = live_stitcher.live_stitcher(args.st_dir)
 		while img_name is None:
 			img_name = live_stitcher.live_stitcher(args.st_dir)
-		while live_stitcher.check_valid():
+		while not live_stitcher.check_valid(img_name):
 			continue
 		######
 
