@@ -8,7 +8,7 @@ url = "rtsp://admin:20160404@192.168.2.13/onvif2"
 time = 3600
 fps = 5
 outdir = "./st_dir"
-outdir_sub = "./st_dir/left"
+outdir_sub = "/left"
 
 ## Param for output directory
 argc = len(sys.argv)
@@ -16,6 +16,7 @@ if argc > 1:
 	outdir = sys.argv[1]
 if not os.path.exists(outdir):
 	os.mkdir(outdir)
+outdir_sub = outdir + outdir_sub
 if not os.path.exists(outdir_sub):
 	os.mkdir(outdir_sub)
 

@@ -39,25 +39,25 @@ v_length = 24.
 overlord_url = "http://192.168.2.16"
 err_marrgin = 5
 track_map = np.array([[[10,0],[10,150]],
-    [[10,150],[61,193]],
-    [[61,193],[96,159]],
-    [[96,159],[96,75]],
-    [[96,159],[150,200]],
-    [[150,200],[200,160]],
-    [[200,160],[200,70]],
-    [[200,160],[240,190]],
-    [[240,190],[280,150]],
-    [[280,150],[280,74]],
-    [[55,155],[55,70]],
-    [[55,70],[98,22]],
-    [[98,22],[145,59]],
-    [[145,59],[145,160]],
-    [[145,59],[200,17]],
-    [[200,17],[245,70]],
-    [[245,70],[245,154]],
-    [[245,70],[280,20]],
-    [[280,20],[320,86]],
-    [[320,86],[320,200]]])
+	[[10,150],[61,193]],
+	[[61,193],[96,159]],
+	[[96,159],[96,75]],
+	[[96,159],[150,200]],
+	[[150,200],[200,160]],
+	[[200,160],[200,70]],
+	[[200,160],[240,190]],
+	[[240,190],[280,150]],
+	[[280,150],[280,74]],
+	[[55,155],[55,70]],
+	[[55,70],[98,22]],
+	[[98,22],[145,59]],
+	[[145,59],[145,160]],
+	[[145,59],[200,17]],
+	[[200,17],[245,70]],
+	[[245,70],[245,154]],
+	[[245,70],[280,20]],
+	[[280,20],[320,86]],
+	[[320,86],[320,200]]])
 
 def parse_pckg(package):
 	# Below is example:
@@ -118,10 +118,10 @@ def get_coords(num_reqs=num_reqs):
 	return float(x), float(y), float(ang)
 
 def ccw(A,B,C):
-    return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
+	return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
 
 def intersect(A,B,C,D):
-        return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+		return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
 def check_position(track_map=track_map, width=v_width, length=v_length):
 	x0, y0, ang = get_coords()
@@ -220,6 +220,10 @@ def reverse_motion():
 	inv_command = last_command + 3
 	send_control(inv_command, img_name)
 
+def emergency_reverse():
+	print("Sending command %s" % links[3])
+	r = urllib2.urlopen(clinks[3], timeout=2)
+
 def auto_drive(img_name):
 
 	res = 1 if not detect else check_position()
@@ -231,14 +235,17 @@ def auto_drive(img_name):
 		pred_act = model.predict(np.array([md_img]))[0]
 		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
 		act_i = np.argmax(pred_act)
-		while pred_act[act_i] >= 0 and act_i in block_lst[-1]:
-			pred_act[act_i] = -1.
-			act_i = np.argmax(pred_act)
-		if act_i == -1:
-			block_lst.pop()
-			reverse_motion()
+		if ((abs(pred_act[1]-0.5)<.2) and (abs(pred_act[2]-0.5)<0.2)):
+			emergency_reverse()
 		else:
-			send_control(act_i, img_name)
+			while pred_act[act_i] >= 0 and act_i in block_lst[-1]:
+				pred_act[act_i] = -1.
+				act_i = np.argmax(pred_act)
+			if act_i == -1:
+				block_lst.pop()
+				reverse_motion()
+			else:
+				send_control(act_i, img_name)
 		return pred_act, act_i
 	elif res == -1:
 		# If we cannot detect where we are
