@@ -30,7 +30,7 @@ NUM_CLASSES = 3
 shapeX = 320
 shapeY = 120
 cshapeY = 80
-
+conf_level=0.7
 max_angle = pi / 4.0
 key = 0
 num_reqs = 10
@@ -235,7 +235,7 @@ def auto_drive(img_name):
 		pred_act = model.predict(np.array([md_img]))[0]
 		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
 		act_i = np.argmax(pred_act)
-		if ((abs(pred_act[1]-0.5)<.2) and (abs(pred_act[2]-0.5)<0.2)):
+		if (pred_act[act_i]<conf_level):
 			emergency_reverse()
 		else:
 			while pred_act[act_i] >= 0 and act_i in block_lst[-1]:

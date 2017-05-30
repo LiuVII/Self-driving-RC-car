@@ -6,7 +6,7 @@ import numpy as np
 # Init params
 url = "rtsp://admin:20160404@192.168.2.5/onvif2"
 time = 3600
-fps = 5
+fps = 20
 outdir = "./st_dir"
 outdir_sub = "/right"
 

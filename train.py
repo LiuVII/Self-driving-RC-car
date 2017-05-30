@@ -35,7 +35,7 @@ def model(load, shape, tr_model=None):
 
     # conv5x5_l, conv3x3_l, dense_layers = [16, 24], [36, 48], [512, 128, 16]
     conv3x3_l, dense_layers = [24, 32, 40, 48], [512, 64, 16]
-    
+
     model = Sequential()
     model.add(Conv2D(16, (5, 5), activation='elu', input_shape=shape))
     model.add(MaxPooling2D())
@@ -53,7 +53,7 @@ def model(load, shape, tr_model=None):
     model.add(Dense(NUM_CLASSES, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
     return model
-    
+
 def get_X_y(data_file):
     """Read the log file and turn it into X/y pairs. Add an offset to left images, remove from right images."""
     X, y = [], []
@@ -88,18 +88,18 @@ def process_image(path, command, augment, shape=(shapeY, shapeX)):
         image = random_darken(image)  # before numpy'd
     elif augment and random.random() < 0.25:
         image = random_brighten(image)  # before numpy'd
-    
+
     if augment and random.random() < 0.5:
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)        
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
         new_command = [command[0], command[2], command[1]]
 
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
     if augment and equ_type < 0.25:
         equalize_adapthist(aimage, clip_limit=0.05)
-        
-        
-    
+
+
+
     # if augment:
     #     # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
 
@@ -161,7 +161,7 @@ def train(model_name, val_split, epoch_num, step_num):
         net = model(load=False, shape=(cshapeY, shapeX, 3))
     net.summary()
     X, y = get_X_y(data_dir + args.img_dir + '_log.csv')
-    
+
     # print("X\n", X[:10], "y\n", y[:10])
     Xtr, Xval, ytr, yval = train_test_split(X, y, test_size=val_split, random_state=random.randint(0, 100))
     tr_classes = [[] for _ in range(NUM_CLASSES)]
@@ -225,7 +225,7 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    
+
     batch_size = args.batch
     data_dir = "./model_data/"
     pos = args.img_dir.find("_s_")
