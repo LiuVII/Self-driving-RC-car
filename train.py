@@ -27,7 +27,7 @@ oshapeY = 240
 NUM_CLASSES = 3
 shapeX = 320
 shapeY = 120
-cshapeY = 80
+cshapeY = 120
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
@@ -77,7 +77,7 @@ def process_image(path, command, augment, shape=(shapeY, shapeX)):
     new_command = command
 
     image = load_img(path, target_size=shape)
-    image = image.crop((0, shapeY // 3, shapeX, shapeY))
+    # image = image.crop((0, shapeY // 3, shapeX, shapeY))
     # random.seed(random.randint(0, 9001))
     equ_type = random.random()
     if not augment or equ_type >= 0.25:

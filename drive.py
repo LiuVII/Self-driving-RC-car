@@ -16,7 +16,8 @@ import select
 import math
 from PIL import ImageOps
 from PIL import Image
-from train import process_image, model
+# from train import process_image, model
+from train2 import process_image, model
 import live_stitcher
 
 #Controls for wifi car v1
