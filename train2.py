@@ -94,9 +94,11 @@ def process_image(file_name, command, augment, shape=(shapeY, shapeX)):
         folder_name = folder_name[1:]
     else:
         folder_name = "data"
-    if augment:
+    if command:
         file_name = "./data_sets/%s/%s/%s" % (args.img_dir, folder_name, file_name)
     image = load_img(file_name, target_size=shape)
+    if not command and (not augment or equ_type >= 0.25):
+        image = ImageOps.autocontrast(image, 15)
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
     aimage = aimage - 0.5
