@@ -48,21 +48,11 @@ def process_image(path, shape=(shapeY, shapeX)):
     func_ops = [image_autocontrast, image_equalize, image_flip]
 
     set_root = "./data_sets/%s" % (args.img_folder)
-    cropped_path = "./data_sets/%s/crop" % (args.img_folder)
 
-    cropped_size = (shapeY // 3 * 2, shapeX)
-
-    if not os.path.exists(cropped_path):
-        os.mkdir(cropped_path)
-    for f in os.listdir(path):
-        if re.search(".*\.jpg$", f):
-            image = load_img(set_root+"/data/"+f, target_size=shape)
-            image_crop(image, f, cropped_path)
-
-    folders = [cropped_path]
+    folders = [path]
     for cnt in range(len(operations)):
         for item in itertools.combinations(range(3), cnt+1):
-            src_folder = cropped_path
+            src_folder = path
             if len(item) > 1:
                 for i in range(len(item) - 1):
                     if i:
@@ -85,7 +75,7 @@ def process_image(path, shape=(shapeY, shapeX)):
                 exit(1)
             for f in os.listdir(src_folder):
                 if re.search(".*\.jpg$", f):
-                    image = load_img(src_folder+"/"+f, target_size=cropped_size)
+                    image = load_img(src_folder+"/"+f, target_size=shape)
                     func_ops[item[-1]](image, f, dst_folder)
 
     for i in range(len(folders)):
@@ -102,9 +92,9 @@ def process_image(path, shape=(shapeY, shapeX)):
             os.mkdir(b_dst_folder)
         for f in os.listdir(src_folder):
             if re.search(".*\.jpg$", f):
-                image = load_img(src_folder+"/"+f, target_size=cropped_size)
+                image = load_img(src_folder+"/"+f, target_size=shape)
                 darken(image, f, d_dst_folder)
-                image = load_img(src_folder+"/"+f, target_size=cropped_size)
+                image = load_img(src_folder+"/"+f, target_size=shape)
                 brigthen(image, f, b_dst_folder)
 
 if __name__ == "__main__":

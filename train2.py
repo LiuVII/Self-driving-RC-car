@@ -26,7 +26,7 @@ oshapeY = 240
 NUM_CLASSES = 3
 shapeX = 320
 shapeY = 120
-cshapeY = 80
+cshapeY = 120
 
 operations = ['darken', 'brigthen', 'autocont', 'equalize', 'flip']
 
@@ -93,7 +93,7 @@ def process_image(file_name, command, augment, shape=(shapeY, shapeX)):
     if folder_name:
         folder_name = folder_name[1:]
     else:
-        folder_name = "crop"
+        folder_name = "data"
     file_name = "./data_sets/%s/%s/%s" % (args.img_dir, folder_name, file_name)
     image = load_img(file_name, target_size=shape)
     aimage = img_to_array(image)
