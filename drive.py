@@ -155,7 +155,7 @@ def display_img():
 	# img = cv2.imread(img_name, 1)
 	pil_img = Image.open(img_name)
 	if type(pil_img) != type(None):
-		pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
+		# pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
 		pil_img = ImageOps.autocontrast(pil_img, 10)
 		# image = load_img(path, target_size=shape)
 		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
