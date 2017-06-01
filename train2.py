@@ -98,7 +98,6 @@ def process_image(file_name, command, augment, shape=(shapeY, shapeX)):
     image = load_img(file_name, target_size=shape)
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
-    print aimage.shape
     aimage = aimage - 0.5
     return aimage, new_command
 
