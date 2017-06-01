@@ -9,6 +9,7 @@ import time
 from math import sqrt, pi, cos, sin
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
 
 from train import process_image, model
 
@@ -58,6 +59,18 @@ parser.add_argument(
 	default=0,
 	help='Detection of data close to misclassification 0 - off/ 1 - on.'
 )
+parser.add_argument(
+	'-class_err',
+	type=float,
+	default=1.0,
+	help='Detection of misclassifications exceeding error. Default: 1.0.'
+)
+parser.add_argument(
+	'-miss_err',
+	type=float,
+	default=.66,
+	help='Threshold value for detection of disperse predictions. Default: 0.66.'
+)
 
 args = parser.parse_args()
 
@@ -81,6 +94,8 @@ if not os.path.exists(data_dir):
 # Model params
 predict = False
 detect = False
+class_err = args.class_err
+miss_err = args.miss_err
 if args.model:
 	shape = (shapeY, shapeX, 3)
 	model = model(True, shape, args.model)
@@ -174,6 +189,15 @@ def draw_predict():
 	cv2.line(img,(int(oshapeX / 2 - x_shift), int(oshapeY - y_shift)),(oshapeX // 2, oshapeY),(0,255,0),3)
 	return pred_angle, pred_prob
 
+def get_avg_angle(prediction):
+	avg_angle = 0
+	for i in range(NUM_CLASSES):
+		avg_angle += prediction[i] * get_steering(i)
+	return avg_angle
+
+
+miss_lst = []
+err_lst = []
 while tries < 10 and ind < sample_length:
 	# Measure time to keep certain drawing speed
 	t1 = time.time()
@@ -211,12 +235,14 @@ while tries < 10 and ind < sample_length:
 
 			# Detection of data close to misclassification
 			near_miss = 0
+			curr_err = 0
 			if detect:
-				avg_angle = 0
-				for i in range(NUM_CLASSES):
-					avg_angle += pred_prob[i] * get_steering(i)
+				avg_angle = get_avg_angle(pred_prob)
 				near_miss = abs(pred_angle - avg_angle) / max_angle
-				if near_miss > 0.66 or correct:
+				miss_lst.append(near_miss)
+				curr_err = abs(avg_angle - angle) / (2. * max_angle)
+				err_lst.append(curr_err)
+				if near_miss > miss_err or correct or curr_err > class_err:
 					# fimg = cv2.flip(img, 1)
 					# cv2.imshow(title_name, np.hstack((img, fimg)))
 					cv2.imshow(title_name, img)
@@ -226,7 +252,7 @@ while tries < 10 and ind < sample_length:
 				cv2.imshow(title_name, img)
 			
 			key = 0
-			if correct or (detect and near_miss > 0.66):
+			if correct or (detect and (near_miss > miss_err or curr_err > class_err)):
 				key = cv2.waitKey(0)
 				## Save img_name and angle to the list
 				if key & 0xFF == ord('a'):
@@ -261,5 +287,15 @@ if correct:
 elif detect:
 	df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
 	df.to_csv(data_dir + "d_" + args.img_dir + '_log.csv', index=False)
+	f, (ax1, ax2) = plt.subplots(1, 2, sharex=True)
+	miss_lst.sort()
+	# ax1.plot(miss_lst)
+	ax1.hist(miss_lst)
+	ax1.set_title('Predictions near-miss')
+	err_lst.sort()
+	# ax2.plot(err_lst)
+	ax2.hist(err_lst)
+	ax2.set_title('Predictions with missclassified error ' + str(class_err))
+	plt.show()
 else:
 	print("Total error: %f" % (err / float(ind)))
