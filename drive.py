@@ -25,13 +25,14 @@ import live_stitcher
 #pip install https://pypi.python.org/packages/source/g/getch/getch-1.0-python2.tar.gz#\
 #md5=586ea0f1f16aa094ff6a30736ba03c50
 
+delta_time = 150
 oshapeX = 640
 oshapeY = 240
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
 cshapeY = 80
-conf_level=0.7
+conf_level=0.3
 max_angle = pi / 4.0
 key = 0
 num_reqs = 10
@@ -234,7 +235,7 @@ def auto_drive(img_name):
 			block_lst.append([])
 		md_img, _ = process_image(img_name, None, False)
 		pred_act = model.predict(np.array([md_img]))[0]
-		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
+		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f | Rev: %.2f" % (pred_act[1], pred_act[0], pred_act[2], pred_act[3]))
 		act_i = np.argmax(pred_act)
 		if (pred_act[act_i]<conf_level):
 			emergency_reverse()
@@ -277,7 +278,7 @@ def	drive(auto):
 		# print(img_name, curr_auto, drive)
 
 		ct = time.time()
-		if (ct - ot) * 1000 > exp_time + 1200:
+		if (ct - ot) * 1000 > exp_time + delta_time:
 			drive = True
 
 		if key == '\033':
@@ -344,7 +345,7 @@ if __name__ == '__main__':
 		'-exp_time',
 		type=int,
 		help='Command expiration time. Default: 500ms',
-		default=500
+		default=250
 	)
 	parser.add_argument(
 		'-detect',

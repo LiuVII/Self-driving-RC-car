@@ -23,12 +23,10 @@ from skimage.exposure import equalize_adapthist
 
 oshapeX = 640
 oshapeY = 240
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
 cshapeY = 120
-
-operations = ['darken', 'brigthen', 'autocont', 'equalize', 'flip']
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""
@@ -75,35 +73,11 @@ def get_X_y(data_file):
 
 def process_image(file_name, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    new_command = command
-
-    equ_type = random.random()
-    folder_name = ""
-    # if not augment or equ_type >= 0.25:
-    #     folder_name += "_autocont"
-    # if augment and equ_type < 0.25:
-    #     folder_name += "_equalize"
-    # if augment and random.random() < 0.5:
-    #     folder_name += "_flip"
-    #     new_command = [command[0], command[2], command[1]]
-    # if augment and random.random() < 0.25:
-    #     folder_name += "_darken"
-    # elif augment and random.random() < 0.25:
-    #     folder_name += "_brigthen"
-    # if folder_name:
-    #     folder_name = folder_name[1:]
-    # else:
-    #     folder_name = "data"
-    # if command:
-    #     file_name = "./data_sets/%s/%s/%s" % (args.img_dir, folder_name, file_name)
-    if
     image = load_img(file_name, target_size=shape)
-    # if not command and (not augment or equ_type >= 0.25):
-    #     image = ImageOps.autocontrast(image, 15)
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
     aimage = aimage - 0.5
-    return aimage, new_command
+    return aimage, command
 
 def _generator(batch_size, classes, X, y, augment):
     """Generate batches of training data forever."""

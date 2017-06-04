@@ -98,8 +98,6 @@ def process_image(path, command, augment, shape=(shapeY, shapeX)):
     if augment and equ_type < 0.25:
         equalize_adapthist(aimage, clip_limit=0.05)
 
-
-
     # if augment:
     #     # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
 
