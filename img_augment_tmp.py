@@ -112,12 +112,13 @@ def synthesize_images(set_name, op_list):
     """Synthesize data from original images"""
 
     op_todo = [
-        (op_list[0]),
-        (op_list[1]),
-        (op_list[2]),
-        (op_list[0],op_list[2]),
-        (op_list[1],op_list[2]),
+        ([op_list[0]]),
+        ([op_list[1]]),
+        ([op_list[2]]),
+        ([op_list[0],op_list[2]]),
+        ([op_list[1],op_list[2]])
     ]
+    print op_todo
     # for ind in range(len(op_list)):
     #     for item in itertools.combinations(op_list, ind+1):
     #         op_todo.append(item)
@@ -143,13 +144,13 @@ def synthesize_images(set_name, op_list):
         for entry in entries:
             cnt_iter += 1
             printProgressBar(cnt_iter, cnt_total)
-            try:
-                new_entries = process_image(img_path, entry[0], int(entry[1]), op_todo)
-                writer = csv.writer(io_csv, delimiter=',')
-                for new_entry in new_entries:
-                    writer.writerow(new_entry)
-            except:
-                print "CSV entry error"
+            # try:
+            new_entries = process_image(img_path, entry[0], int(entry[1]), op_todo)
+            writer = csv.writer(io_csv, delimiter=',')
+            for new_entry in new_entries:
+                writer.writerow(new_entry)
+            # except:
+                # print "CSV entry error"
             time.sleep(0.1)
 
 if __name__ == "__main__":
