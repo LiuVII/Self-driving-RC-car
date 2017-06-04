@@ -75,14 +75,11 @@ def get_X_y(data_file):
 
 def process_image(file_name, command, augment, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    new_command = command
-
-    equ_type = random.random()
     image = load_img(file_name, target_size=shape)
     aimage = img_to_array(imager)
     aimage = aimage.astype(np.float32) / 255.
     aimage = aimage - 0.5
-    return aimage, new_command
+    return aimage, command
 
 def _generator(batch_size, classes, X, y, augment):
     """Generate batches of training data forever."""
