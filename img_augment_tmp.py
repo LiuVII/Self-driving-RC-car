@@ -111,10 +111,16 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
 def synthesize_images(set_name, op_list):
     """Synthesize data from original images"""
 
-    op_todo = []
-    for ind in range(len(op_list)):
-        for item in itertools.combinations(op_list, ind+1):
-            op_todo.append(item)
+    op_todo = [
+        (op_list[0]),
+        (op_list[1]),
+        (op_list[2]),
+        (op_list[0],op_list[2]),
+        (op_list[1],op_list[2]),
+    ]
+    # for ind in range(len(op_list)):
+    #     for item in itertools.combinations(op_list, ind+1):
+    #         op_todo.append(item)
 
     img_path = "data_sets/%s/data/" % (set_name)
     csv_file = "model_data/%s_log.csv" % (set_name)
