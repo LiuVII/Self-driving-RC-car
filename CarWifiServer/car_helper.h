@@ -25,6 +25,7 @@ extern Servo myservo;
 #define LEFT 			120 // 100 @ 2sec
 #define STRAIGHT	85
 #define RIGHT			30 // 75 @ 2sec
+extern int m;
 extern int left;
 extern int straight;
 extern int right;
