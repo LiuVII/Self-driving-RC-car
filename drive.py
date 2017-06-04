@@ -27,7 +27,7 @@ import live_stitcher
 
 oshapeX = 640
 oshapeY = 240
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
 cshapeY = 80
@@ -234,7 +234,7 @@ def auto_drive(img_name):
 			block_lst.append([])
 		md_img, _ = process_image(img_name, None, False)
 		pred_act = model.predict(np.array([md_img]))[0]
-		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f" % (pred_act[1], pred_act[0], pred_act[2]))
+		print("Lft: %.2f | Fwd: %.2f | Rght: %.2f | Rev: %.2f" % (pred_act[1], pred_act[0], pred_act[2], pred_act[3]))
 		act_i = np.argmax(pred_act)
 		if (pred_act[act_i]<conf_level):
 			emergency_reverse()

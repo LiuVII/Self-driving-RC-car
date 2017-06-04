@@ -15,13 +15,6 @@ shapeX = 320
 shapeY = 120
 cshapeY = 80
 
-# def process_image(path, shape=(shapeY, shapeX)):
-# 	"""Process and augment an image."""
-# 	image = load_img(path, target_size=shape)
-# 	image = image.crop((0, shapeY // 3, shapeX, shapeY))
-# 	image = ImageOps.autocontrast(image, 15)
-# 	return image
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Image Modifier')
 	parser.add_argument(
@@ -90,13 +83,5 @@ if __name__ == '__main__':
 		df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
 		df.to_csv(nodup_file, index=False)
 	
-	# if args.cutoff:
-	# 	print("Duplicates detected: %d" % count)
-	# 	f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-	# 	ax1.plot(rat_lst)
-	# 	ax1.set_title('Before')
-	# 	ax2.plot(res_lst)
-	# 	ax2.set_title('After cutoff ' + str(args.cutoff))
-	# else:
-	# 	plot(sa_lst)
-	# plt.show()
+	if args.cutoff:
+		print("Duplicates detected: %d" % count)

@@ -23,12 +23,10 @@ from skimage.exposure import equalize_adapthist
 
 oshapeX = 640
 oshapeY = 240
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
 cshapeY = 120
-
-operations = ['darken', 'brigthen', 'autocont', 'equalize', 'flip']
 
 def model(load, shape, tr_model=None):
     """Return a model from file or to train on."""

@@ -10,36 +10,36 @@ oshapeY = 240
 shapeX = 320
 shapeY = 120
 
-reverser = [0,2,1,3]
+reverse = [0,2,1,3]
 
-def image_autocontrast(image):
-    # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # minVal, maxVal, _minLoc, _maxLoc = cv2.minMaxLoc(img_gray) 
-    # input_range = maxVal - minVal
-    # alpha = 255 / input_range
-    # beta = -minVal * alpha
-    # output = alpha * image + beta
-    # print output.shape, output.size, output.dtype
-    # print image.shape, image.size, image.dtype
-    # return alpha * image + beta
-    # return image
-    B = 0.0
-    W = 0.0
-    hist, bins = np.histogram(image.flatten(),256,[0,256])
-    cdf = np.cumsum(hist)
-    cdf_n = cdf * hist.max() / cdf.max()
-    cdf_m = np.ma.masked_less_equal(cdf, B * cdf.max())
-    cdf_m = np.ma.masked_greater_equal(cdf_m, (1.0 - W) * cdf.max())
-    imin = cdf_m.argmin()
-    imax = cdf_m.argmax()
-    tr = np.zeros(256, dtype=np.uint8)
-    tr = np.zeros(256, dtype=np.uint8)
-    for i in range(0, 256):
-        if i < imin: tr[i] = 0
-        elif i > imax: tr[i] = 255
-        else: tr[i] = (i - imin) * 255 / (imax - imin)
-    img_res = tr[image]
-    return img_res    
+# def image_autocontrast(image):
+#     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#     # minVal, maxVal, _minLoc, _maxLoc = cv2.minMaxLoc(img_gray) 
+#     # input_range = maxVal - minVal
+#     # alpha = 255 / input_range
+#     # beta = -minVal * alpha
+#     # output = alpha * image + beta
+#     # print output.shape, output.size, output.dtype
+#     # print image.shape, image.size, image.dtype
+#     # return alpha * image + beta
+#     # return image
+#     B = 0.0
+#     W = 0.0
+#     hist, bins = np.histogram(image.flatten(),256,[0,256])
+#     cdf = np.cumsum(hist)
+#     cdf_n = cdf * hist.max() / cdf.max()
+#     cdf_m = np.ma.masked_less_equal(cdf, B * cdf.max())
+#     cdf_m = np.ma.masked_greater_equal(cdf_m, (1.0 - W) * cdf.max())
+#     imin = cdf_m.argmin()
+#     imax = cdf_m.argmax()
+#     tr = np.zeros(256, dtype=np.uint8)
+#     tr = np.zeros(256, dtype=np.uint8)
+#     for i in range(0, 256):
+#         if i < imin: tr[i] = 0
+#         elif i > imax: tr[i] = 255
+#         else: tr[i] = (i - imin) * 255 / (imax - imin)
+#     img_res = tr[image]
+#     return img_res    
 
 def adjust_gamma(image, gamma=1.0):
     # img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -58,11 +58,11 @@ def image_darken(image):
 def image_brighten(image):
     return adjust_gamma(image, 2)
 
-def image_equalize(image):
-    img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
-    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
-    image = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-    return image
+# def image_equalize(image):
+#     img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+#     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+#     image = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+#     return image
 
 def image_flip(image):
     return cv2.flip(image, 1)
@@ -75,15 +75,15 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
     aug_images = []
     
     # darkening
-    tmp_img = img_orig
-    tmp_img = image_darken(tmp_img)
-    cv2.imwrite(filename=path+"darken_"+name,img=tmp_img)
-    aug_images.append(["darken_"+name,command])
-    # brightening
-    tmp_img = img_orig
-    tmp_img = image_brighten(tmp_img)
-    cv2.imwrite(filename=path+"brighten_"+name,img=tmp_img)
-    aug_images.append(["brighten_"+name,command])
+    # tmp_img = img_orig
+    # tmp_img = image_darken(tmp_img)
+    # cv2.imwrite(filename=path+"darken_"+name,img=tmp_img)
+    # aug_images.append(["darken_"+name,command])
+    # # brightening
+    # tmp_img = img_orig
+    # tmp_img = image_brighten(tmp_img)
+    # cv2.imwrite(filename=path+"brighten_"+name,img=tmp_img)
+    # aug_images.append(["brighten_"+name,command])
 
     for ops in op_todo:
         new_image = img_orig
@@ -96,15 +96,15 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
                 new_command = reverse[new_command]
         aug_images.append([output_prepend+name,new_command])
         cv2.imwrite(filename=path+output_prepend+name,img=new_image)
-        # do darkening and brightening
-        tmp_img = new_image
-        tmp_img = image_darken(tmp_img)
-        cv2.imwrite(filename=path+"darken_"+output_prepend+name,img=tmp_img)
-        aug_images.append(["darken_"+output_prepend+name,new_command])
-        tmp_img = new_image
-        tmp_img = image_darken(tmp_img)
-        cv2.imwrite(filename=path+"brighten_"+output_prepend+name,img=tmp_img)
-        aug_images.append(["brighten_"+output_prepend+name,new_command])
+        # # do darkening and brightening
+        # tmp_img = new_image
+        # tmp_img = image_darken(tmp_img)
+        # cv2.imwrite(filename=path+"darken_"+output_prepend+name,img=tmp_img)
+        # aug_images.append(["darken_"+output_prepend+name,new_command])
+        # tmp_img = new_image
+        # tmp_img = image_darken(tmp_img)
+        # cv2.imwrite(filename=path+"brighten_"+output_prepend+name,img=tmp_img)
+        # aug_images.append(["brighten_"+output_prepend+name,new_command])
 
     return aug_images
 
@@ -137,11 +137,13 @@ def synthesize_images(set_name, op_list):
         for entry in entries:
             cnt_iter += 1
             printProgressBar(cnt_iter, cnt_total)
-            new_entries = process_image(img_path, entry[0], entry[1], op_todo)
-            writer = csv.writer(io_csv, delimiter=',')
-            for new_entry in new_entries:
-                writer.writerow(new_entry)
-            printProgressBar(cnt_iter, cnt_total)
+            try:
+                new_entries = process_image(img_path, entry[0], int(entry[1]), op_todo)
+                writer = csv.writer(io_csv, delimiter=',')
+                for new_entry in new_entries:
+                    writer.writerow(new_entry)
+            except:
+                print "CSV entry error"
             time.sleep(0.1)
 
 if __name__ == "__main__":
@@ -160,8 +162,10 @@ if __name__ == "__main__":
         exit(1)
 
     op_list = [
-        ('autocont',image_autocontrast),
-        ('equalize',image_equalize),
+        # ('autocont',image_autocontrast),
+        # ('equalize',image_equalize),
+        ('darken',image_darken),
+        ('brighten',image_brighten),
         ('flip',image_flip)
     ]
 
