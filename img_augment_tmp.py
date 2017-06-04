@@ -10,6 +10,8 @@ oshapeY = 240
 shapeX = 320
 shapeY = 120
 
+reverser = [0,2,1,3]
+
 def image_autocontrast(image):
     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # minVal, maxVal, _minLoc, _maxLoc = cv2.minMaxLoc(img_gray) 
@@ -91,8 +93,7 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
             output_prepend += op[0]+"_"
             new_image = op[1](new_image)
             if op[0] == 'flip':
-                new_command = 0 if new_command == 0 else \
-                            1 if new_command == 2 else 2
+                new_command = reverse[new_command]
         aug_images.append([output_prepend+name,new_command])
         cv2.imwrite(filename=path+output_prepend+name,img=new_image)
         # do darkening and brightening
