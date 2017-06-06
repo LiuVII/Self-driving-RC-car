@@ -21,7 +21,7 @@ from train2 import process_image, model
 import live_stitcher
 
 
-delta_time = 10
+delta_time = 150
 oshapeX = 640
 oshapeY = 240
 NUM_CLASSES = 4
@@ -30,6 +30,7 @@ shapeY = 120
 cshapeY = 80
 conf_level=0.3
 max_angle = pi / 4.0
+detect = 0
 key = 0
 num_reqs = 10
 v_width = 16.
@@ -188,7 +189,6 @@ def	drive(auto):
 					print("Autopilot disengaged")
 				elif event.key == pygame.K_q:
 					return
-
 		
 		# If drive window is open and currently autopilot mode is on
 		if auto and drive and img_name:

@@ -1,22 +1,18 @@
 from __future__ import print_function
-import os
-import time
-import datetime
-import sys
+import os, sys, re
+import time, datetime
 import numpy as np
-import signal
-import atexit
+import signal, atexit
 from subprocess import Popen, PIPE, STDOUT
 import subprocess
 
 def ctrl_c_handler(signum, frame):
-    print ("\rStopping capture...")
+    print ("\rStopping capture... Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     sys.exit(1)
 
 def cleanup():
     global process_list
     for p in process_list:
-        p.communicate(input=b'q\n')
         if not p.poll():
             p.kill()
     process_list = []
@@ -24,8 +20,8 @@ def cleanup():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, ctrl_c_handler)
-    url = ["rtsp://admin:20160404@192.168.2.13/onvif2", \
-            "rtsp://admin:20160404@192.168.2.5/onvif2"]
+    url = ["rtsp://admin:20160404@192.168.2.5/onvif2", \
+            "rtsp://admin:20160404@192.168.2.13/onvif2"]
     time_last = 3600
     fps = 20
     outdir = "./st_dir"
@@ -68,9 +64,18 @@ if __name__ == "__main__":
     process_list = []
     atexit.register(cleanup)
     process_list = [Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT) for cmd in command_list]
-    print("subprocesses created")
+    print("Initializing...")
+    time.sleep(5)
+    # if process_list[1].poll() or process_list[0].poll():
+    #     print("Cameras Down")
+    print("Subprocesses Created:")
     print("Capture Folder: %s" % outdir)
     start_time = time.time()
-    while True:
+    while not process_list[1].poll() and not process_list[0].poll():
+        # if re.search(r".*timed out.*", process_list[1].stdout.readline()) or\
+        #     re.search(r".*timed out.*", process_list[0].stdout.readline()):
+        #     print("Cameras Down")
+        #     exit(0)
         print("\rCapturing... Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)),end='\r')
+    print("Cameras Down")
     exit(0)
