@@ -7,7 +7,7 @@ from subprocess import Popen, PIPE, STDOUT
 import subprocess
 
 def ctrl_c_handler(signum, frame):
-    print ("\rStopping capture... Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print ("\rStopping...           Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     sys.exit(1)
 
 def cleanup():
@@ -71,11 +71,14 @@ if __name__ == "__main__":
     print("Subprocesses Created:")
     print("Capture Folder: %s" % outdir)
     start_time = time.time()
-    while not process_list[1].poll() and not process_list[0].poll():
+    while True:
         # if re.search(r".*timed out.*", process_list[1].stdout.readline()) or\
         #     re.search(r".*timed out.*", process_list[0].stdout.readline()):
         #     print("Cameras Down")
         #     exit(0)
-        print("\rCapturing... Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)),end='\r')
+        for p in process_list:
+            if p.poll():
+                exit(1)
+        print("\rCapturing...          Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)),end='\r')
     print("Cameras Down")
     exit(0)
