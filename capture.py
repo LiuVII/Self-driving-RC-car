@@ -58,7 +58,7 @@ if __name__ == "__main__":
     command_list = []
     # Save images to the folder
     for i in range(len(url)):
-        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.jpg'"
+        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.bmp'"
         command_list.append(command_str)
 
     process_list = []

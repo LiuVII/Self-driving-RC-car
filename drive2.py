@@ -21,9 +21,12 @@ from train2 import process_image, model
 import live_stitcher
 
 
-delta_time = 150
+delta_time = -100
+mult_sh=2
 oshapeX = 640
 oshapeY = 240
+w = oshapeX*mult_sh
+h = oshapeY*mult_sh
 NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
@@ -31,12 +34,12 @@ cshapeY = 80
 conf_level=0.3
 max_angle = pi / 4.0
 detect = 0
-key = 0
 num_reqs = 10
 v_width = 16.
 v_length = 24.
 err_marrgin = 5
 actions = [pygame.K_UP,pygame.K_LEFT,pygame.K_RIGHT,pygame.K_DOWN]
+live_sticher_limit=10
 
 def display_img():
 	c=0;
@@ -45,29 +48,34 @@ def display_img():
 		img_name = args.st_dir + "/" + test.decode("utf-8").strip()
 	else:
 		####### get stitched image here
-		print "using multi. using live_sticher"
+		#print "using multi. using live_sticher"
 		img_name = live_stitcher.live_stitcher(args.st_dir)
-		while img_name is None:
+		while (img_name is None and c<live_sticher_limit):
 			c=c+1;
-			print "using.livesticher counter:%d"%(c)
+		#	print "using.livesticher counter:%d"%(c)
 			img_name = live_stitcher.live_stitcher(args.st_dir)
-			print img_name
-		while not live_stitcher.check_valid(img_name):
-			print "not live_stitcher.check_valid(img_name)"
-			continue
 		######
-	print "load image from disk"
-	pil_img = Image.open(img_name)
-	if type(pil_img) != type(None):
-		# pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
-		pil_img = ImageOps.autocontrast(pil_img, 10)
-		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-		print "destroy prev windows. show new image."
-		cv2.destroyAllWindows()
-		cv2.imshow(img_name, cv_img)
-		cv2.waitKey(1)
-		print "return image name"
-		return img_name
+	if (img_name is None):
+		print "img_name is none"
+		return
+	#print "load image from disk"
+#	pil_img = Image.open(img_name)
+#	if type(pil_img) != type(None):
+#		# pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
+#		pil_img = ImageOps.autocontrast(pil_img, 10)
+#		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+#		print "destroy prev windows. show new image."
+#		cv2.destroyAllWindows()
+#		cv2.imshow(img_name, cv_img)
+#		cv2.waitKey(1)
+#		print "return image name"
+#		return img_name
+	img=pygame.image.load(img_name) 
+	if img:
+		img = pygame.transform.scale(img,(w,h))
+		screen.blit(img,(0,0))
+		pygame.display.flip()
+		return
 	print ("Error: couldn't get an image")
 	return ""
 
@@ -103,9 +111,11 @@ def send_control(act_i, img_name):
 		print("Command %s couldn't reach a vehicle" % clinks[act_i])
 		return -1
 
-def manual_drive(img_name,key):
+def manual_drive(img_name,keys):
 	for act_i in range(len(actions)):
-		if key == actions[act_i]:
+		tmp=actions[act_i]
+		if keys[tmp]:
+			print "key pressed %d"%(tmp)
 			res = send_control(act_i, img_name)
 			break
 
@@ -155,60 +165,49 @@ def auto_drive(img_name):
 
 def	drive(auto):
 	ot = 0
-	wait_time = 0
 	img_name = ""
 	drive = False
-	key = 0
+	keys=[]
 	print("before thread")
 	while True:
 		print "new cycle"
-
 		ct = time.time()
-		print "timestamp :%s"%(ct)
+		#print "timestamp :%s"%(ct)
 		if (ct - ot) * 1000 > exp_time + delta_time:
 			drive = True
-
-		for event in pygame.event.get():
-			# check if key is pressed
-			# if you use event.key here it will give you error at runtime
-			print "pygame.event fired up"
-			if event.type == pygame.KEYDOWN:
-				print event.key
-				if event.type == pygame.QUIT:
-					return
-				if (event.key in actions):
-					if auto:
-						print("Autopilot disengaged")
-						wait_time = 5
-						auto = False
-					if drive:
-						drive = False
-						manual_drive(img_name,event.key)
-						ot = ct
-
-				elif event.key == pygame.K_a:
-					auto = True
-					print("Autopilot mode on!")
-				elif event.key == pygame.K_s:
-					auto = False
-					print("Autopilot disengaged")
-				elif event.key == pygame.K_q:
-					return
-			print "calling display_img()"		
-			img_name = display_img()
-			print(img_name, drive)
+		keys = pygame.key.get_pressed()
+		if keys[pygame.K_ESCAPE] or keys[pygame.K_q] or pygame.event.peek(pygame.QUIT):
+			print "exit pressed"
+			return
+		if drive and not auto :
+			print "drive"
+			drive = False
+			manual_drive(img_name,keys)
+			ot = ct
+		if keys[pygame.K_a]:
+			auto = True
+			print("Autopilot mode on!")
+		if keys[pygame.K_s]:
+			auto = False
+			print("Autopilot disengaged")
+		keys=[]
+		pygame.event.pump()
+		print "calling display_img()"		
+		img_name = display_img()
 
 		# If drive window is open and currently autopilot mode is on
 		if auto and drive and img_name:
+			print "calling model prediction"	
 			drive = False
 			pred_act, act_i = auto_drive(img_name)
 			ot = ct
-			img_name = 0
-
 
 if __name__ == '__main__':
 	pygame.init()
-	pygame.key.set_repeat(50,50)
+	size=(w,h)
+	screen = pygame.display.set_mode(size) 
+	c = pygame.time.Clock() # create a clock object for timing
+	
 	parser = argparse.ArgumentParser(description='Driver')
 	parser.add_argument(
 		'-model',

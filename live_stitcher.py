@@ -46,25 +46,29 @@ def live_stitcher(img_dir):
 	out_dir = img_dir + "/data"
 
 	if not os.path.exists(out_dir):
+		print "os.path.exists(out_dir)"
 		os.mkdir(out_dir)
 
 	fetch_left = "ls " + left + " | tail -n1"
 	fetch_right = "ls " + right + " | tail -n1"
-
+	
+	#print "subprocess.check_output fetch_left"
 	img_left = subprocess.check_output(fetch_left, shell=True)
+	#print "subprocess.check_output fetch_right"
 	img_right = subprocess.check_output(fetch_right, shell=True)
 
+	
 	img_left = os.path.join(left, img_left).strip()
 	img_right = os.path.join(right, img_right).strip()
 
-	# print last_left, last_right
-	# print img_left, img_right
+	#print last_left, img_left
+	#print last_right, img_right
 	# if file a file has been used before
 	# return None as to not recreate stitched image
 	if last_left == img_left or last_right == img_right:
 		# last_left = img_left
 		# last_right = img_right
-		# print "old file(s) seen"
+		print "old file(s) seen"
 		return None
 
 	img_counter += 1
