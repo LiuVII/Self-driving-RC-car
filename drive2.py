@@ -39,30 +39,34 @@ err_marrgin = 5
 actions = [pygame.K_UP,pygame.K_LEFT,pygame.K_RIGHT,pygame.K_DOWN]
 
 def display_img():
+	c=0;
 	if not args.multi:
 		test = subprocess.check_output(fetch_last_img, shell=True)
 		img_name = args.st_dir + "/" + test.decode("utf-8").strip()
 	else:
 		####### get stitched image here
-		# print "using multi"
+		print "using multi. using live_sticher"
 		img_name = live_stitcher.live_stitcher(args.st_dir)
 		while img_name is None:
+			c=c+1;
+			print "using.livesticher counter:%d"%(c)
 			img_name = live_stitcher.live_stitcher(args.st_dir)
+			print img_name
 		while not live_stitcher.check_valid(img_name):
+			print "not live_stitcher.check_valid(img_name)"
 			continue
 		######
-
-	# img = cv2.imread(img_name, 1)
+	print "load image from disk"
 	pil_img = Image.open(img_name)
 	if type(pil_img) != type(None):
 		# pil_img = pil_img.crop((0, oshapeY // 3, oshapeX, oshapeY))
 		pil_img = ImageOps.autocontrast(pil_img, 10)
-		# image = load_img(path, target_size=shape)
 		cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-		# img = cv2.equalizeHist(img)
+		print "destroy prev windows. show new image."
 		cv2.destroyAllWindows()
 		cv2.imshow(img_name, cv_img)
 		cv2.waitKey(1)
+		print "return image name"
 		return img_name
 	print ("Error: couldn't get an image")
 	return ""
@@ -157,20 +161,21 @@ def	drive(auto):
 	key = 0
 	print("before thread")
 	while True:
-
-		img_name = display_img()
-		# print(img_name, curr_auto, drive)
+		print "new cycle"
 
 		ct = time.time()
+		print "timestamp :%s"%(ct)
 		if (ct - ot) * 1000 > exp_time + delta_time:
 			drive = True
 
 		for event in pygame.event.get():
 			# check if key is pressed
 			# if you use event.key here it will give you error at runtime
-
+			print "pygame.event fired up"
 			if event.type == pygame.KEYDOWN:
 				print event.key
+				if event.type == pygame.QUIT:
+					return
 				if (event.key in actions):
 					if auto:
 						print("Autopilot disengaged")
@@ -189,7 +194,10 @@ def	drive(auto):
 					print("Autopilot disengaged")
 				elif event.key == pygame.K_q:
 					return
-		
+			print "calling display_img()"		
+			img_name = display_img()
+			print(img_name, drive)
+
 		# If drive window is open and currently autopilot mode is on
 		if auto and drive and img_name:
 			drive = False
@@ -259,7 +267,6 @@ if __name__ == '__main__':
 		model = model(True, shape, tr_model=args.model)
 		auto = args.auto
 		err = 0
-
 	train = False
 	if args.train:
 		train = True
@@ -276,12 +283,17 @@ if __name__ == '__main__':
 	block_lst = []
 	correct = False
 	# Set expiration time for commands
+	print "let's check if we have respond from the car"
 	exp_time = args.exp_time
 	if send_control(6, ""):
 		print("Exiting")
+		pygame.quit()
 		exit(0)
-
+	
+	print "fully initialized. ready to drive."
 	drive(auto)
+	print "done driving"
 	if train:
 		df = pd.DataFrame(sa_lst, columns=["img_name", "command"])
 		df.to_csv(data_dir + args.train + '_log.csv', index=False)
+	pygame.quit()
