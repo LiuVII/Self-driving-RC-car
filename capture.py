@@ -6,6 +6,7 @@ import signal, atexit
 from subprocess import Popen, PIPE, STDOUT
 import subprocess
 
+
 def ctrl_c_handler(signum, frame):
     print ("\rStopping...           Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     sys.exit(1)
@@ -15,7 +16,9 @@ def cleanup():
     try:
         for p in process_list:
             if not p.poll():
-                p.kill()
+                p.terminate()
+                p.wait()
+        subprocess.Popen(['reset']).wait()
         process_list = []
     except:
         pass
@@ -69,12 +72,12 @@ if __name__ == "__main__":
     atexit.register(cleanup)
     process_list = [Popen(cmd, shell=True) for cmd in command_list]
     print("Initializing...")
+    start_time = time.time()
     time.sleep(5)
     # if process_list[1].poll() or process_list[0].poll():
     #     print("Cameras Down")
     print("Subprocesses Created:")
     print("Capture Folder: %s" % outdir)
-    start_time = time.time()
     while True:
         # if re.search(r".*timed out.*", process_list[1].stdout.readline()) or\
         #     re.search(r".*timed out.*", process_list[0].stdout.readline()):

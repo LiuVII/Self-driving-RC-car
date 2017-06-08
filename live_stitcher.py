@@ -37,7 +37,6 @@ def check_valid(out_name):
 	except:
 		return False
 
-# if __name__ == "__main__":
 def live_stitcher(img_dir):
 	global last_left, last_right, img_counter
 	# img_dir = "./st_dir"
