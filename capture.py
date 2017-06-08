@@ -12,10 +12,13 @@ def ctrl_c_handler(signum, frame):
 
 def cleanup():
     global process_list
-    for p in process_list:
-        if not p.poll():
-            p.kill()
-    process_list = []
+    try:
+        for p in process_list:
+            if not p.poll():
+                p.kill()
+        process_list = []
+    except:
+        pass
     print("Stopped capturing...")
 
 if __name__ == "__main__":
@@ -26,6 +29,7 @@ if __name__ == "__main__":
     fps = 20
     outdir = "./st_dir"
     outdir_sub = ["/left","/right"]
+    outdir_log = ["/left.log","/right.log"]
 
     ## Param for output directory
     argc = len(sys.argv)
@@ -58,12 +62,12 @@ if __name__ == "__main__":
     command_list = []
     # Save images to the folder
     for i in range(len(url)):
-        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.bmp'"
+        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.bmp' &> " + outdir+outdir_log[i]
         command_list.append(command_str)
 
     process_list = []
     atexit.register(cleanup)
-    process_list = [Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT) for cmd in command_list]
+    process_list = [Popen(cmd, shell=True) for cmd in command_list]
     print("Initializing...")
     time.sleep(5)
     # if process_list[1].poll() or process_list[0].poll():
