@@ -18,44 +18,51 @@ int	vid = 0x046d;
 
 //Constants for using curl
 char *ip = "192.168.2.3";
-char *datturn[3] = {"/lf", "/st85", "/rt"};
+char *datturn[3] = {"/lf", "", "/rt"};
 char *datdir[2] = {"/rev", "/fwd"};
 
 //Header for time
 #include <time.h>
 
+//Initial time
 clock_t t0 = 0;
 
-//This function allows
+//Total angle
+float	angle = 90.0;
 
-void	parse(unsigned char buf[256])
+int	parse(unsigned char buf[256])
 {
 	unsigned char		gear;
 	unsigned char		temp;
 	unsigned short	wheel;
+	float						steer;
 	int							turn;
 	int							dir;
 	int							on;
 	clock_t					t1;
 
-	printf("---Current State---\n");
+//	printf("---Current State---\n");
 
 	//Get Direction
 	wheel = buf[3] + buf[4] * 256;
-	printf("Turn angle: %.1f\nDirection: ", (wheel - 32767.0) / 65535.0 * 360.0);
-	if (wheel < 0x7b00)
+	steer = (wheel - 32767.0) / 65535.0 * angle;
+//	printf("Turn angle: ");
+	//if (steer > 45.0 || steer < -45.0)
+	//	printf("\x1b[31m");
+//	printf("%.1f\x1b[0m\nDirection: ", steer);
+	if (steer < angle / -20)
 	{
-		printf("left\n");
+//		printf("left\n");
 		turn = 0;
 	}
-	else if (wheel > 0x8300)
+	else if (steer > angle / 20)
 	{
-		printf("right\n");
+//		printf("right\n");
 		turn = 2;
 	}
 	else
 	{
-		printf("straight\n");
+//		printf("straight\n");
 		turn = 1;
 	}
 
@@ -66,54 +73,71 @@ void	parse(unsigned char buf[256])
 		temp /= 2;
 		gear++;
 	}
-	if (gear == 6)
+	if (gear == 0)
+	{
+		dir = 2;
+//		printf("Gear set to N\n");
+	}
+	else if (gear % 2 == 0)
+	//if (gear == 6)
 	{
 		dir = 0;
-		printf("Gear set to R\n");
+//		printf("Gear set to R\n");
 	}
 	else
 	{
 		dir = 1;
-		printf("Gear set to %d\n", gear);
-		if (!gear)
-			dir = 2;
+//		printf("Gear set to F\n");
+		//printf("Gear set to %d\n", gear);
+		//if (!gear)
+		//	dir = 2;
 	}
 
 	//Check gas pedal
 	if (buf[5] < 0xff){
 		on = 1;
-		printf("Gas is on\n");
+//		printf("Gas is on\n");
 	}
 	else{
 		on = 0;
-		printf("Gas is off\n");
+//		printf("Gas is off\n");
 	}
 
 	//Check brake pedal
 	if (buf[6] < 0xff) {
 		on &= 0;
-		printf("Brake is on\n");
+//		printf("Brake is on\n");
 	}
 	else{
 		on &= 1;
-		printf("Brake is off\n");
+//		printf("Brake is off\n");
 	}
 
 	//Send command to car...
 	t1 = clock();
-	if (on && (t1 - t0) > 500 && dir < 2)
+	if (on /*&& (t1 - t0) > 500*/ && dir < 2)
 	{
-		char command[128] = "curl ";
-		strcat(command, ip);
+		char command[128];
+
+		memset(command, 0, 128);
+//		strcat(command, ip);
 		strcat(command, datdir[dir]);
 		strcat(command, datturn[turn]);
-		system(command);
+		for (int i = 0; i < 128; i++)
+		{
+			if (!command[i])
+				break;
+			write(1, &command[i], 1);
+		}
+//		system(command);
 		t0 = clock();
+		return (1);
 	}
-//	else
-//		printf("no command... are you pressing the gas?\n");
+	//else
+	//	printf("no command... are you pressing the gas?\n");
 
-	printf("--------------------\n");
+//	printf("-------------------\n");
+	return (0);
 }
 
 int main(void)
@@ -149,9 +173,9 @@ int main(void)
 	// Read the Product String
 	wstr[0] = 0x0000;
 	res = hid_get_product_string(handle, wstr, MAX_STR);
-	if (res < 0)
-		printf("Unable to read product string\n");
-	printf("Product String: %ls\n", wstr);
+//	if (res < 0)
+//		printf("Unable to read product string\n");
+//	printf("Product String: %ls\n", wstr);
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
@@ -162,27 +186,23 @@ int main(void)
 
 	memset(buf,0,sizeof(buf));
 
-	printf("Reading input...\n");
+//	printf("Reading input...\n");
 
 	// Read requested state. hid_read() has been set to be
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
-	while (1)
-	{
-		res = 0;
-		while (res == 0) {
-			res = hid_read(handle, buf, sizeof(buf));
-			if (res < 0)
-				printf("Unable to read()\n");
+	res = 0;
+	while (res == 0) {
+		res = hid_read(handle, buf, sizeof(buf));
+//			if (res < 0)
+//				printf("Unable to read()\n");
 		}
 
 //		printf("Data read:\n");
 //		// Print out the returned buffer.
 //		for (i = 0; i < res; i++)
 //			printf("buf[%d] = %02hhx \n", i, buf[i]);
-		parse(buf);
-		usleep(1000);
-	}
+	parse(buf);
 	hid_close(handle);
 
 	/* Free static HIDAPI objects. */

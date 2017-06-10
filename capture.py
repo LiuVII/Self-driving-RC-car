@@ -26,8 +26,8 @@ def cleanup():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, ctrl_c_handler)
-    url = ["rtsp://admin:20160404@192.168.2.5/onvif2", \
-            "rtsp://admin:20160404@192.168.2.13/onvif2"]
+    url = ["rtsp://admin:20160404@192.168.2.13/onvif2", \
+            "rtsp://admin:20160404@192.168.2.5/onvif2"]
     time_last = 3600
     fps = 20
     outdir = "./st_dir"
