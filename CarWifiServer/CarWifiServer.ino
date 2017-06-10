@@ -14,8 +14,8 @@ void setup() {
 	straight = STRAIGHT;
 	left = LEFT;
 	right = RIGHT;
-  // angle = straight;
-  // speed = M;
+	// angle = straight;
+	// speed = M;
 
 	expire = 500;
 	ignored_cnt = 0;
