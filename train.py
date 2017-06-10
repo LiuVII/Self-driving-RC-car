@@ -7,7 +7,7 @@ With admiration for and inspiration from:
     https://medium.com/@harvitronix/training-a-deep-learning-model-to-steer-a-car-in-99-lines-of-code-ba94e0456e6a
 """
 import os
-import csv, random, numpy as np
+import csv, random, numpy as np, re
 import argparse
 from keras.models import load_model, Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -16,7 +16,6 @@ from keras.layers.convolutional import MaxPooling2D
 from keras.preprocessing.image import img_to_array, load_img, flip_axis, random_shift
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
-import cv2
 from PIL import Image
 import PIL
 from PIL import ImageOps
@@ -24,7 +23,7 @@ from skimage.exposure import equalize_adapthist
 
 oshapeX = 640
 oshapeY = 240
-NUM_CLASSES = 3
+NUM_CLASSES = 4
 shapeX = 320
 shapeY = 120
 cshapeY = 120
@@ -39,9 +38,6 @@ def model(load, shape, tr_model=None):
     model = Sequential()
     model.add(Conv2D(16, (5, 5), activation='elu', input_shape=shape))
     model.add(MaxPooling2D())
-    # for cl in conv5x5_l:
-    #     model.add(Conv2D(cl, (5, 5), activation='elu'))
-    #     model.add(MaxPooling2D())
     for i in range(len(conv3x3_l)):
         model.add(Conv2D(conv3x3_l[i], (3, 3), activation='elu'))
         if i < len(conv3x3_l) - 1:
@@ -59,82 +55,44 @@ def get_X_y(data_file):
     X, y = [], []
     with open(data_file) as fin:
         reader = csv.reader(fin)
-        next(reader, None)
-        for img, command in reader:
-            X.append(img.strip())
-            y.append(int(command))
+        test = next(reader, None)
+        if args.multi:
+            if len(test) != 3:
+                print("CSV doesn't match for multipel cameras")
+                exit(1)
+            for img_l, img_r, command in reader:
+                X.append([img_l.strip(),img_r.strip()])
+                y.append(int(command))
+        else:
+            for img, command in reader:
+                X.append(img.strip())
+                y.append(int(command))
     return X, to_categorical(y, num_classes=NUM_CLASSES)
 
-# def clahe_equalize(img):
-#     b, g, r = cv2.split(img)
-#     red = clahe.apply(r)
-#     green = clahe.apply(g)
-#     blue = clahe.apply(b)
-#     return cv2.merge((blue, green, red))
-
-def process_image(path, command, augment, shape=(shapeY, shapeX)):
+def process_image(file_names, command, augment, multi, shape=(shapeY, shapeX)):
     """Process and augment an image."""
-    new_command = command
+    if multi:
+        image_l = load_img(file_names[0], target_size=shape)
+        image_r = load_img(file_names[1], target_size=shape)
+        images = [image_l, image_r]
+        widths, heights = zip(*(i.size for i in images))
 
-    image = load_img(path, target_size=shape)
-    # image = image.crop((0, shapeY // 3, shapeX, shapeY))
-    # random.seed(random.randint(0, 9001))
-    equ_type = random.random()
-    if not augment or equ_type >= 0.25:
-        # Balance histogram with cutoff 15%
-        image = ImageOps.autocontrast(image, 15)
+        total_width = sum(widths)
+        max_height = max(heights)
 
-    if augment and random.random() < 0.25:
-        image = random_darken(image)  # before numpy'd
-    elif augment and random.random() < 0.25:
-        image = random_brighten(image)  # before numpy'd
+        image = Image.new('RGB', (total_width, max_height))
 
-    if augment and random.random() < 0.5:
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        new_command = [command[0], command[2], command[1]]
-
+        x_offset = 0
+        for im in images:
+          image.paste(im, (x_offset,0))
+          x_offset += im.size[0]
+    else:
+        image = load_img(file_names[0], target_size=shape)
+        #should do some equalizaiton here
     aimage = img_to_array(image)
     aimage = aimage.astype(np.float32) / 255.
-    if augment and equ_type < 0.25:
-        equalize_adapthist(aimage, clip_limit=0.05)
-
-    # if augment:
-    #     # image = random_shift(image, 0, 0.2, 0, 1, 2)  # only vertical
-
     aimage = aimage - 0.5
-    return aimage, new_command
-
-def random_darken(image):
-    """Given an image (from Image.open), randomly darken a part of it."""
-    w, h = image.size
-
-    # Make a random box.
-    # random.seed(random.randint(0, 9001))
-    x1, y1 = random.randint(0, w), random.randint(0, h)
-    x2, y2 = random.randint(x1, w), random.randint(y1, h)
-
-    # Loop through every pixel of our box (*GASP*) and darken.
-    for i in range(x1, x2):
-        for j in range(y1, y2):
-            new_value = tuple([int(x * 0.5) for x in image.getpixel((i, j))])
-            image.putpixel((i, j), new_value)
-    return image
-
-def random_brighten(image):
-    """Given an image (from Image.open), randomly darken a part of it."""
-    w, h = image.size
-
-    # Make a random box.
-    # random.seed(random.randint(0, 9001))
-    x1, y1 = random.randint(0, w), random.randint(0, h)
-    x2, y2 = random.randint(x1, w), random.randint(y1, h)
-
-    # Loop through every pixel of our box (*GASP*) and darken.
-    for i in range(x1, x2):
-        for j in range(y1, y2):
-            new_value = tuple([int((x + 255.) * 0.5) for x in image.getpixel((i, j))])
-            image.putpixel((i, j), new_value)
-    return image
+    return aimage, command
 
 def _generator(batch_size, classes, X, y, augment):
     """Generate batches of training data forever."""
@@ -146,7 +104,14 @@ def _generator(batch_size, classes, X, y, augment):
             # sample_index = random.randint(0, len(classes[class_i]) - 1)
             sample_index = random.choice(classes[class_i])
             command = y[sample_index]
-            image, command = process_image(img_dir + X[sample_index], command, augment=augment)
+            if args.multi:
+                file_names = [img_dir_l + X[sample_index][0],
+                            img_dir_r + X[sample_index][1]]
+                shape=(shapeY,shapeX/2)
+            else:
+                file_names = [img_dir + X[sample_index]]
+                shape=(shapeY,shapeX/2)
+            image, command = process_image(file_names, command, augment=augment, multi=args.multi, shape=shape)
             batch_X.append(image)
             batch_y.append(command)
         yield np.array(batch_X), np.array(batch_y)
@@ -221,6 +186,11 @@ if __name__ == '__main__':
         default=1,
         help='Number of training epochs. Default: 1'
     )
+    parser.add_argument(
+        '-multi',
+        action='store_true',
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -228,8 +198,14 @@ if __name__ == '__main__':
     data_dir = "./model_data/"
     pos = args.img_dir.find("_s_")
     if pos > 0:
-        img_dir = "./data_sets/" + args.img_dir[:pos] + "/" + "data/"
+        img_dir = "./data_sets/" + args.img_dir[:pos] + "/data/"
+        if args.multi:
+            img_dir_l = "./data_sets/" + args.img_dir + "/left/"
+            img_dir_r = "./data_sets/" +  args.img_dir + "/right/"
     else:
-        img_dir = "./data_sets/" + args.img_dir + "/" + "data/"
+        img_dir = "./data_sets/" + args.img_dir + "/data/"
+        if args.multi:
+            img_dir_l = "./data_sets/" + args.img_dir + "/left/"
+            img_dir_r = "./data_sets/" +  args.img_dir + "/right/"
     model_dir = "./models/"
     train(args.model, args.valid, args.epoch, args.steps)
