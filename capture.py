@@ -4,11 +4,21 @@ import time, datetime
 import numpy as np
 import signal, atexit
 from subprocess import Popen, PIPE, STDOUT
+import argparse
 import subprocess
+import logging
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+url = ["rtsp://admin:20160404@192.168.2.13/onvif2", \
+        "rtsp://admin:20160404@192.168.2.5/onvif2"]
+# url = ["rtsp://admin:20160404@192.168.2.22/onvif2", \
+#         "rtsp://admin:20160404@192.168.2.21/onvif2"]
+outdir_sub = ["/left","/right"]
+outdir_log = ["/left.log","/right.log"]
 
 def ctrl_c_handler(signum, frame):
-    print ("\rStopping...           Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print("\rStopping...           Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     sys.exit(1)
 
 def cleanup():
@@ -24,48 +34,60 @@ def cleanup():
         pass
     print("Stopped capturing...")
 
+def build_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-outdir',
+        type=str,
+        default='./st_dir',
+        help="Output path"
+    )
+    parser.add_argument(
+        '-fps',
+        type=float,
+        default=20.,
+        help="FPS - number of frames to capture in 1 sec"
+    )
+    parser.add_argument(
+        '-time',
+        type=int,
+        default=3600,
+        help="Total training time"
+    )
+    return parser
+
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, ctrl_c_handler)
-    url = ["rtsp://admin:20160404@192.168.2.13/onvif2", \
-            "rtsp://admin:20160404@192.168.2.5/onvif2"]
-    time_last = 3600
-    fps = 20
-    outdir = "./st_dir"
-    outdir_sub = ["/left","/right"]
-    outdir_log = ["/left.log","/right.log"]
+    parser = build_parser()
+    args = parser.parse_args()
 
-    ## Param for output directory
-    argc = len(sys.argv)
-    if argc > 1:
-    	outdir = sys.argv[1]
-    if not os.path.exists(outdir):
-    	os.mkdir(outdir)
-    outdir_sub = [outdir+x for x in outdir_sub]
+    if not os.path.exists(args.outdir):
+    	os.mkdir(args.outdir)
+    outdir_sub = [args.outdir+x for x in outdir_sub]
     for x in outdir_sub:
         if not os.path.exists(x):
-            os.mkdir(x)
+            os.makedirs(x)
 
-    ## Param for fps
-    if argc > 2:
-    	fps = sys.argv[2]
-    	if float(fps) <= 0.0:
-    		print("Warning: FPS should be a rational number more than zero. Value set to 5")
-    		exit(0)
+    if args.fps <= 0.0:
+        logging.error("Error: FPS should be a rational number more than zero.")
+        exit(0)
 
-    ## Param for total training time
-    if argc > 3:
-    	time_last = sys.argv[3]
-    	if int(time_last) <= 0:
-    		print("Warning: Total time should be an integer more than zero. Value set to 3600")
-    		time_last = 3600
+    if args.time <= 0:
+        logging.error("Error: Total time should be an integer more than zero.")
+        exit(0)
 
     ## Calculated number of zeros in filename counter
-    num = int(np.log10(int(time_last) * float(fps))) + 1
+    num = int(np.log10(int(args.time) * float(args.fps))) + 1
+    logging.debug("Directory: %s" % args.outdir)
+    logging.debug("FPS: %f" % args.fps)
+    logging.debug("Time: %d" % args.time)
+    logging.debug("Num: %d" % num)
+    logging.debug("URL: %s" % str(url))
 
     command_list = []
     # Save images to the folder
     for i in range(len(url)):
-        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.bmp' &> " + outdir+outdir_log[i]
+        command_str = "ffmpeg -i "+url[i]+" -vf fps="+str(args.fps)+" '"+outdir_sub[i]+"/IMG_%0"+str(num)+"d.bmp' &> " + args.outdir+outdir_log[i]
         command_list.append(command_str)
 
     process_list = []
@@ -74,10 +96,8 @@ if __name__ == "__main__":
     print("Initializing...")
     start_time = time.time()
     time.sleep(5)
-    # if process_list[1].poll() or process_list[0].poll():
-    #     print("Cameras Down")
     print("Subprocesses Created:")
-    print("Capture Folder: %s" % outdir)
+    print("Capture Folder: %s" % args.outdir)
     while True:
         # if re.search(r".*timed out.*", process_list[1].stdout.readline()) or\
         #     re.search(r".*timed out.*", process_list[0].stdout.readline()):
@@ -87,5 +107,5 @@ if __name__ == "__main__":
             if p.poll():
                 exit(1)
         print("\rCapturing...          Time Elapsed: %s" % time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)),end='\r')
-    print("Cameras Down")
+    logging.error("Cameras Down")
     exit(0)
