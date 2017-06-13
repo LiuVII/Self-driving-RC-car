@@ -6,7 +6,7 @@ import select
 import argparse
 import urllib2
 import subprocess
-import cv2
+#import cv2
 import numpy as np, pandas as pd
 from PIL import ImageOps
 from PIL import Image
@@ -38,7 +38,7 @@ conf_level=0.3
 # v_width = 16.
 # v_length = 24.
 # err_marrgin = 5
-
+act_clock = 0
 actions = [pygame.K_UP,pygame.K_LEFT,pygame.K_RIGHT,pygame.K_DOWN]
 
 def verify_args():
@@ -105,7 +105,7 @@ def display_img():
         test = subprocess.check_output(var['fetch_last_img'], shell=True)
         ret_img = [test]
         img_name = args.st_dir + "/" + test.decode("utf-8").strip()
-        img = pygame.image.load(img_name) 
+        img = pygame.image.load(img_name)
         if img:
             img = pygame.transform.scale(img,(oshapeX,oshapeY))
             screen.blit(img,(0,0))
@@ -151,12 +151,27 @@ def record_data(act_i, img):
             shutil.copy(img[0], var['img_dir']+new_names[0])
     logging.debug("Exiting record_data %d %s" % (act_i, str(img)))
 
+def engine(switch):
+    print(engine.drive)
+    if switch != engine.drive:
+        engine.drive = switch
+        if engine.drive:
+            pygame.mixer.music.load('assets/sound/drive_car.wav')
+            pygame.mixer.music.play(-1)
+        else:
+            pygame.mixer.music.load('assets/sound/idle_car.wav')
+            pygame.mixer.music.play(-1)
+
 def send_control(act_i, img):
     global train, threads
     try:
         logging.info("Sending command %s" % links[act_i])
         if not args.teach:
-            r = urllib2.urlopen(clinks[act_i], timeout=2)
+            #r = urllib2.urlopen(clinks[act_i], timeout=2)
+            if args.wheel:
+                if act_i < 6:
+        			#Car drive
+                    engine(1)
         if train and act_i < 6:
             t = threading.Thread(target=record_data, args=(act_i,img))
             t.setDaemon(True)
@@ -176,7 +191,7 @@ def manual_drive_ext(img,intent):
             res = send_control(act_i, img)
             return
 
-def manual_drive(img, keys):
+def manual_drive(img, keys, wheel):
     for act_i in range(len(links)):
         if links[act_i] == wheel:
             res = send_control(act_i, img)
@@ -198,7 +213,7 @@ def auto_drive(img):
     if img:
         md_img, _ = process_image(img, None, False, args.multi, shape=(shapeY,shapeX))
         pred_act = model.predict(np.array([md_img]))[0]
-        logging.info("Lft: %.2f | Fwd: %.2f | Rght: %.2f | Rev: %.2f" % 
+        logging.info("Lft: %.2f | Fwd: %.2f | Rht: %.2f | Rev: %.2f" %
             (pred_act[1], pred_act[0], pred_act[2], pred_act[3]))
         act_i = np.argmax(pred_act)
 
@@ -236,9 +251,11 @@ def drive(auto):
             logging.debug("Drive")
             drive = False
             if not wheel:
+                if args.wheel:
+                    engine(0)
                 manual_drive_ext(img,intent)
             else:
-                manual_drive(img,keys)
+                manual_drive(img,keys, wheel)
             intent=0
             ot = ct
         if keys[pygame.K_a]:
@@ -328,10 +345,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
     var, model, auto, train = verify_args()
 
-    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)] 
+    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
     clinks = [args.url + el for el in links]
     sa_lst = []
     threads = []
+
+    #Car Startup sound
+    if args.wheel:
+        pygame.mixer.init()
+        pygame.mixer.music.load('assets/sound/start_car.wav')
+        pygame.mixer.music.play(0)
+        pygame.time.wait(4500)
+        engine.drive = 1
+        engine(0)
 
     pygame.init()
     #check car response
