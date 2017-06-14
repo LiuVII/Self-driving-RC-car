@@ -38,8 +38,17 @@ conf_level=0.3
 # v_width = 16.
 # v_length = 24.
 # err_marrgin = 5
-act_clock = 0
+
 actions = [pygame.K_UP,pygame.K_LEFT,pygame.K_RIGHT,pygame.K_DOWN]
+
+def init_sound():
+    sounds = {}
+    sounds['start'] = pygame.mixer.Sound('assets/sound/start_car.wav')
+    sounds['vroom'] = pygame.mixer.Sound('assets/sound/vroom_car.wav')
+    sounds['drive'] = pygame.mixer.Sound('assets/sound/drive_car.wav')
+    sounds['slow'] = pygame.mixer.Sound('assets/sound/slow_car.wav')
+    sounds['idle'] = pygame.mixer.Sound('assets/sound/idle_car.wav')
+    return sounds
 
 def verify_args():
     var = {}
@@ -153,21 +162,28 @@ def record_data(act_i, img):
 
 def engine(switch):
     print(engine.drive)
+    startup = 0
+    if engine.drive == -1:
+        startup = 1
     if switch != engine.drive:
         engine.drive = switch
         if engine.drive:
-            pygame.mixer.music.load('assets/sound/drive_car.wav')
-            pygame.mixer.music.play(-1)
+            channel.play(sounds['vroom'], 0, 1000)
         else:
-            pygame.mixer.music.load('assets/sound/idle_car.wav')
-            pygame.mixer.music.play(-1)
+            if not startup:
+                channel.play(sounds['slow'], 0, 1000)
+    if engine.drive:
+        channel.queue(sounds['drive'])
+    else:
+        channel.queue(sounds['idle'])
+
 
 def send_control(act_i, img):
     global train, threads
     try:
         logging.info("Sending command %s" % links[act_i])
         if not args.teach:
-            #r = urllib2.urlopen(clinks[act_i], timeout=2)
+            r = urllib2.urlopen(clinks[act_i], timeout=2)
             if args.wheel:
                 if act_i < 6:
         			#Car drive
@@ -353,10 +369,11 @@ if __name__ == "__main__":
     #Car Startup sound
     if args.wheel:
         pygame.mixer.init()
-        pygame.mixer.music.load('assets/sound/start_car.wav')
-        pygame.mixer.music.play(0)
-        pygame.time.wait(4500)
-        engine.drive = 1
+        sounds = init_sound()
+        channel = pygame.mixer.Channel(0)
+        channel.play(sounds['start'], 0, 4500)
+        #pygame.time.wait(4500)
+        engine.drive = -1
         engine(0)
 
     pygame.init()
