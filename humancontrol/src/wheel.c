@@ -115,11 +115,16 @@ int	parse(unsigned char buf[256])
 	if (on && dir < 2)
 	{
 		char command[128];
+		char num[4];
 
 		memset(command, 0, 128);
 //		strcat(command, ip);
 		strcat(command, datdir[dir]);
 		strcat(command, datturn[turn]);
+		if (turn != 1) {
+			sprintf(num, "%d", (int)(steer - 75) * (-1));
+			strcat(command, num);
+		}
 		for (int i = 0; i < 128; i++)
 		{
 			if (!command[i])
