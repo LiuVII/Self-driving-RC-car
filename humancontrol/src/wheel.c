@@ -24,10 +24,9 @@ char *datdir[2] = {"/rev", "/fwd"};
 //Header for time
 #include <time.h>
 
-//Initial time
-clock_t t0 = 0;
-
-//Total angle
+//Constants
+#define MAX_STR 255
+time_t timeout = 1;
 float	angle = 90.0;
 
 int	parse(unsigned char buf[256])
@@ -39,7 +38,6 @@ int	parse(unsigned char buf[256])
 	int							turn;
 	int							dir;
 	int							on;
-	clock_t					t1;
 
 //	printf("---Current State---\n");
 
@@ -114,8 +112,7 @@ int	parse(unsigned char buf[256])
 	}
 
 	//Send command to car...
-	t1 = clock();
-	if (on /*&& (t1 - t0) > 500*/ && dir < 2)
+	if (on && dir < 2)
 	{
 		char command[128];
 
@@ -130,7 +127,6 @@ int	parse(unsigned char buf[256])
 			write(1, &command[i], 1);
 		}
 //		system(command);
-		t0 = clock();
 		return (1);
 	}
 	//else
@@ -144,11 +140,10 @@ int main(void)
 {
 	int 					res;
 	unsigned char buf[256];
-	#define MAX_STR 255
 	wchar_t 			wstr[MAX_STR];
 	hid_device 		*handle;
 	int 					i;
-	time_t				timer;
+	time_t 			start;
 
 	struct hid_device_info *devs, *cur_dev;
 
@@ -192,12 +187,14 @@ int main(void)
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
 	res = 0;
-	while (res == 0) {
+	start = time(NULL);
+	while (res == 0 && time(NULL) - start < timeout) {
 		res = hid_read(handle, buf, sizeof(buf));
 //			if (res < 0)
 //				printf("Unable to read()\n");
 		}
-
+	if (!res)
+		return (0);
 //		printf("Data read:\n");
 //		// Print out the returned buffer.
 //		for (i = 0; i < res; i++)
