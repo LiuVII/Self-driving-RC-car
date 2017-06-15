@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os, sys, io
 from PIL import Image, ImageFont, ImageDraw
+import PIL
 from keras.preprocessing.image import img_to_array
 from train import model
 import numpy as np
@@ -36,15 +37,17 @@ def classification(image_data):
 def apply_mask(img, mask_size, step, nums):
 	global model_time
 	width = 320
-	height = 80
+	height = 120
 	mask = img.copy()
 	map0 = Image.new("RGB", (width, height))
 	map1 = Image.new("RGB", (width, height))
 	map2 = Image.new("RGB", (width, height))
+	map3 = Image.new("RGB", (width, height))
 	pixels = mask.load()
 	pixels0 = map0.load()
 	pixels1 = map1.load()
 	pixels2 = map2.load()
+	pixels3 = map3.load()
 	for i in range(mask_size):
 		for j in range(mask_size):
 			if i < height and j < width:
@@ -69,26 +72,37 @@ def apply_mask(img, mask_size, step, nums):
 					pixels0[c, r] = (int((1 - res[0]) * 255), 0, int(res[0] * 255))
 					pixels1[c, r] = (int((1 - res[1]) * 255), 0, int(res[1] * 255))
 					pixels2[c, r] = (int((1 - res[2]) * 255), 0, int(res[2] * 255))
+					pixels3[c, r] = (int((1 - res[3]) * 255), 0, int(res[3] * 255))
 	draw0 = ImageDraw.Draw(map0)
 	draw1 = ImageDraw.Draw(map1)
 	draw2 = ImageDraw.Draw(map2)
+	draw3 = ImageDraw.Draw(map3)
 	draw = ImageDraw.Draw(mask)
 	draw0.text((0, 0), "Forward %.2f" % nums[0], (0, 255, 0), font)
 	draw1.text((0, 0), "Left %.2f" % nums[1], (0, 255, 0), font)
 	draw2.text((0, 0), "Right %.2f" % nums[2], (0, 255, 0), font)
+	draw3.text((0, 0), "Reverse %.2f" % nums[3], (0, 255, 0), font)
 	draw.text((0, 0), str(mask_size), (0, 255, 0), font)
-	final = Image.new("RGB", (width, 5 * height))
-	final.paste(img, (0, 0, 320, 80))
-	final.paste(map0, (0, 80, 320, 160))
-	final.paste(map1, (0, 160, 320, 240))
-	final.paste(map2, (0, 240, 320, 320))
-	final.paste(mask, (0, 320, 320, 400))
+	final = Image.new("RGB", (width*2, 12 * height))
+	img = img.resize((640,240),PIL.Image.ANTIALIAS)
+	map0 = map0.resize((640,240),PIL.Image.ANTIALIAS)
+	map1 = map1.resize((640,240),PIL.Image.ANTIALIAS)
+	map2 = map2.resize((640,240),PIL.Image.ANTIALIAS)
+	map3 = map3.resize((640,240),PIL.Image.ANTIALIAS)
+	mask = mask.resize((640,240),PIL.Image.ANTIALIAS)
+
+	final.paste(img, (0, 0, 640, 240))
+	final.paste(map0, (0, 240, 640, 480))
+	final.paste(map1, (0, 480, 640, 720))
+	final.paste(map2, (0, 720, 640, 960))
+	final.paste(map3, (0, 960, 640, 1200))
+	final.paste(mask, (0, 1200, 640, 1440))
 	images.append(final)
 
 inp = Image.open(sys.argv[1])
 
-model = model(True, (80, 320, 3), tr_model=sys.argv[2])
-inp = inp.resize((320, 120)).crop((0, 40, 320, 120))
+model = model(True, (120, 320, 3), tr_model=sys.argv[2])
+inp = inp.resize((320, 120))
 font = ImageFont.truetype("/System/Library/Fonts/SFNSText.ttf", 16)
 
 aimage = img_to_array(inp)
@@ -96,9 +110,9 @@ aimage = aimage.astype(np.float32) / 255
 aimage = aimage - 0.5
 res = model.predict(np.array([aimage]))[0]
 
-for i in range(1, 80, 4):
+for i in range(1, 120, 4):
 	apply_mask(inp, i, 5, res)
-img = images.pop(0)
-img.save("map.gif", save_all=True, append_images=images, duration=400)
+	img = images.pop(0)
+	img.save("map"+str(i)+".jpg")
 print(datetime.datetime.now() - start)
 print(model_time)

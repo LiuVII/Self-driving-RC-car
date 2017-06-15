@@ -22,7 +22,7 @@ def check_parameters():
         print "%s output path already exists" % (args.output_set)
         exit(1)
 
-def time_set(file_name):
+def get_time(file_name, path):
 
     ts = os.path.getmtime(file_path+file_name)
     st = datetime.fromtimestamp(ts).strftime('%Y%m%d-%H%M%S-%f')[:-4]
@@ -32,9 +32,8 @@ def time_set(file_name):
 
 def process_data():
     in_csv_file = data_set_dir+args.record_set+"_log.csv"
-    stream_files = os.listdir(stream_dir+args.record_stream+"/data")
-    stream_files = [time_set(x) for x in stream_files]
-    # stream_files = deque([time_set(x) for x in stream_files])
+    stream_files_lf = os.listdir(stream_dir+args.record_stream+"/left")
+    stream_files_rt = os.listdir(stream_dir+args.record_stream+"/right")
 
     attributes = None
     out_csv_entries = []
@@ -111,7 +110,7 @@ if __name__ == "__main__":
 
     image_set_dir = "./data_sets/"
     data_set_dir = "./model_data/"
-    stream_dir = "./st_dir/"
+    stream_dir = "./stream/"
 
     check_parameters()
     print "Start processing"
@@ -119,9 +118,12 @@ if __name__ == "__main__":
 
     # create output folder
     os.mkdir(image_set_dir+args.output_set)
-    os.mkdir(image_set_dir+args.output_set+"/data")
+    os.mkdir(image_set_dir+args.output_set+"/left")
+    os.mkdir(image_set_dir+args.output_set+"/right")
 
-    file_path = stream_dir+args.record_stream+"/data/"
-    output_path = image_set_dir+args.output_set+"/data/"
+    file_path = [stream_dir+args.record_stream+"/left/",
+                stream_dir+args.record_stream+"/right/"]
+    output_path = [image_set_dir+args.output_set+"/left/",
+                    image_set_dir+args.output_set+"/right/"]
 
     process_data()

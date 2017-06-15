@@ -14,11 +14,11 @@ from train4 import process_image, model
 import logging
 import threading
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 NUM_CLASSES = 4
 # delta_time = -200
-delta_time = 400
+delta_time = 200
 
 #Original Image size
 oshapeX = 640
@@ -366,7 +366,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     var, model, auto, train = verify_args()
 
-    links = ['/fwd', '/lf', '/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
+    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
     clinks = [args.url + el for el in links]
     sa_lst = []
     threads = []

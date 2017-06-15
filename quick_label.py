@@ -46,7 +46,7 @@ if __name__ == "__main__":
             output = "%s,%d\n" % (img,args.value)
             csv_file.write(output)
 
-    print
-    print "Timestamping images..."
-    command = "python manage_data.py %s" % args.set
-    subprocess.check_output(command, shell=True)
+    # print
+    # print "Timestamping images..."
+    # command = "python manage_data.py %s" % args.set
+    # subprocess.check_output(command, shell=True)

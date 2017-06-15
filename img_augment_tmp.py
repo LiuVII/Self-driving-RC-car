@@ -70,8 +70,7 @@ def image_flip(image):
 def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
     """ProcWss and augmXnt imagY"""
 
-    image_path = path+name
-    img_orig = cv2.imread(image_path)
+    image_paths = [path[i]+name[i] for i in range(len(path))]
     aug_images = []
     
     # darkening
@@ -86,16 +85,18 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
     # aug_images.append(["brighten_"+name,command])
 
     for ops in op_todo:
-        new_image = img_orig
         new_command = command
-        output_prepend = ""
-        for op in ops:
-            output_prepend += op[0]+"_"
-            new_image = op[1](new_image)
-            if op[0] == 'flip':
-                new_command = reverse[new_command]
-        aug_images.append([output_prepend+name,new_command])
-        cv2.imwrite(filename=path+output_prepend+name,img=new_image)
+        for image_path in image_paths:
+            img_orig = cv2.imread(image_path)
+            new_image = img_orig
+            output_prepend = ""
+            for op in ops:
+                output_prepend += op[0]+"_"
+                new_image = op[1](new_image)
+                if op[0] == 'flip':
+                    new_command = reverse[new_command]
+            aug_images.append([output_prepend+name,new_command])
+            cv2.imwrite(filename=path+output_prepend+name[i],img=new_image)
         # # do darkening and brightening
         # tmp_img = new_image
         # tmp_img = image_darken(tmp_img)
@@ -123,7 +124,9 @@ def synthesize_images(set_name, op_list):
     #     for item in itertools.combinations(op_list, ind+1):
     #         op_todo.append(item)
 
-    img_path = "data_sets/%s/data/" % (set_name)
+    # img_path = "data_sets/%s/data/" % (set_name)
+    img_path = ["data_sets/%s/left/" % (set_name),
+                "data_sets/%s/right/" % (set_name)]
     csv_file = "model_data/%s_log.csv" % (set_name)
 
     with open(csv_file, 'r') as in_csv:
@@ -145,7 +148,7 @@ def synthesize_images(set_name, op_list):
             cnt_iter += 1
             printProgressBar(cnt_iter, cnt_total)
             # try:
-            new_entries = process_image(img_path, entry[0], int(entry[1]), op_todo)
+            new_entries = process_image(img_path, entry[:-2], int(entry[-1]), op_todo)
             writer = csv.writer(io_csv, delimiter=',')
             for new_entry in new_entries:
                 writer.writerow(new_entry)

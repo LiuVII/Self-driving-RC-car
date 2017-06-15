@@ -15,15 +15,13 @@ im1_1= pygame.Surface(size)
 im1_2= pygame.Surface(size)
 
 command1 = [ 'ffmpeg',
-            '-fflags', 'nobuffer',
-            '-i', 'rtsp://admin:20160404@192.168.2.21/onvif2',
+            '-i', 'rtsp://admin:20160404@192.168.2.22/onvif2',
             '-vf', 'fps=15',
             '-f', 'image2pipe',
             '-pix_fmt', 'rgb24',
             '-vcodec', 'rawvideo', '-']
 command2 = [ 'ffmpeg',
-            '-fflags', 'nobuffer',
-            '-i', 'rtsp://admin:20160404@192.168.2.22/onvif2',
+            '-i', 'rtsp://admin:20160404@192.168.2.21/onvif2',
             '-vf', 'fps=15',
             '-f', 'image2pipe',
             '-pix_fmt', 'rgb24',
@@ -69,5 +67,5 @@ while running:
 # for t in threads:
 #     t.join()
 pipe1.stdout.flush()
-pipe2.stdout.flush()
+# pipe2.stdout.flush()
 pygame.quit()
