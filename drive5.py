@@ -17,7 +17,8 @@ import threading
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
 
 NUM_CLASSES = 4
-delta_time = -200
+# delta_time = -200
+delta_time = 400
 
 #Original Image size
 oshapeX = 640
@@ -208,10 +209,14 @@ def manual_drive_ext(img,intent):
             return
 
 def manual_drive(img, keys, wheel):
-    for act_i in range(len(links)):
-        if links[act_i] == wheel:
-            res = send_control(act_i, img)
-            return
+    try:
+        r = urllib2.urlopen(args.url+wheel, timeout=2)
+    except:
+        logging.error("Error: wheel command failed.")
+    # for act_i in range(len(links)):
+    #     if links[act_i] == wheel:
+    #         res = send_control(act_i, img)
+    #         return
 
 def reverse_motion():
     last_command = sa_lst[-1][-1]
@@ -270,9 +275,9 @@ def drive(auto):
                 if args.wheel:
                     engine(0)
                 manual_drive_ext(img,intent)
+                intent=0
             else:
                 manual_drive(img,keys, wheel)
-            intent=0
             ot = ct
         if keys[pygame.K_a]:
             auto = True
@@ -361,7 +366,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     var, model, auto, train = verify_args()
 
-    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
+    links = ['/fwd', '/lf', '/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
     clinks = [args.url + el for el in links]
     sa_lst = []
     threads = []
