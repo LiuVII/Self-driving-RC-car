@@ -77,8 +77,8 @@ if __name__ == '__main__':
 		# Determine visibly the cutoff
 		if ratio < args.cutoff:
 			# print(img_name)
-			# os.remove(args.img_dir+"/left/"+img_name_lf)
-			# os.remove(args.img_dir+"/right/"+img_name_rt)
+			os.remove(args.img_dir+"/left/"+img_name_lf)
+			os.remove(args.img_dir+"/right/"+img_name_rt)
 			print("Image %s is a duplicate of %s" % (str([img_name_lf,img_name_rt]), str(prev_name)))
 			# cv2.imshow("img",img)
 			# img_show = np.concatenate((img, prev_img), axis=0)

@@ -117,7 +117,7 @@ def display_image(image_path, data_path):
                 # if (pred_act[act_i]<conf_level):
                 #     act_i = 3
                 # print ("final: ", actions[act_i], actions[command])
-                if act_i != command:
+                if act_i != command or pred_act[act_i]<conf_level:
                     press = wait_key(command)
                     if press < 0:
                     # exiting and go forward with writing csv
@@ -134,11 +134,13 @@ def display_image(image_path, data_path):
                             else:
                                 i += 1
                         elif press == 6:
+                            os.remove(left_path+entries[i][0])
+                            os.remove(right_path+entries[i][1])
                             entries[i] = []
                             i += 1
                     else:
-                        i += 1
                         entries[i][2] = press
+                        i += 1
                         # print("changed")
                         # print(entries[i])
                     ct = time.time()
@@ -159,6 +161,8 @@ def display_image(image_path, data_path):
             for row in entries:
                 if row:
                     writer.writerow(row)
+                else:
+                    logging.info("skipping")
 
 if __name__ == "__main__":
     parser = build_parser()
