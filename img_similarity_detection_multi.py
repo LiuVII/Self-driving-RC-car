@@ -61,7 +61,7 @@ if __name__ == '__main__':
 		img_paths = [os.path.join(path[0],img_name_lf),
 					os.path.join(path[1], img_name_rt)]
 		command = df['command'].iloc[ind]
-		# print(img_paths)
+		print(img_paths)
 		img_lf = cv2.imread(img_paths[0], 1)
 		img_rt = cv2.imread(img_paths[1], 1)
 		# print (img_lf.size, img_rt.size)

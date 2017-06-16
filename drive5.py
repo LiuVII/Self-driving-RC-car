@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 NUM_CLASSES = 4
 # delta_time = -200
-delta_time = 200
+delta_time = 500
 
 #Original Image size
 oshapeX = 640

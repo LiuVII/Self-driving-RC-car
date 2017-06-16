@@ -44,33 +44,38 @@ def build_parser():
 def wait_key(command):
     global screen
     while True:
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE] or keys[pygame.K_q] or \
-            pygame.event.peek(pygame.QUIT):
-            logging.info('\rExiting...')
-            return (-1)
-        elif keys[pygame.K_UP]:
-            logging.debug("\rup pressed")
-            return (0)
-        elif keys[pygame.K_DOWN]:
-            logging.debug("\rdown pressed")
-            return (3)
-        elif keys[pygame.K_LEFT]:
-            logging.debug("\rleft pressed")
-            return (1)
-        elif keys[pygame.K_RIGHT]:
-            logging.debug("\rright pressed")
-            return (2)
-        elif keys[pygame.K_a]:
-            logging.info("\rMOVE BACK <-")
-            return (4)
-        elif keys[pygame.K_d]:
-            logging.info("\rMOVE FORWARD ->")
-            return (5)
-        elif keys[pygame.K_SPACE]:
-            return (command)
-        # else:
-            # logging.debug("\rIncorrect input")
+        for ev in pygame.event.get():
+            if ev.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_ESCAPE] or keys[pygame.K_q] or \
+                    pygame.event.peek(pygame.QUIT):
+                    logging.info('\rExiting...')
+                    return (-1)
+                elif keys[pygame.K_UP]:
+                    logging.debug("\rup pressed")
+                    return (0)
+                elif keys[pygame.K_DOWN]:
+                    logging.debug("\rdown pressed")
+                    return (3)
+                elif keys[pygame.K_LEFT]:
+                    logging.debug("\rleft pressed")
+                    return (1)
+                elif keys[pygame.K_RIGHT]:
+                    logging.debug("\rright pressed")
+                    return (2)
+                elif keys[pygame.K_a]:
+                    logging.info("\rMOVE BACK <-")
+                    return (4)
+                elif keys[pygame.K_d]:
+                    logging.info("\rMOVE FORWARD ->")
+                    return (5)
+                elif keys[pygame.K_x]:
+                    logging.info("\rRemoving")
+                    return (6)
+                elif keys[pygame.K_SPACE]:
+                    return (command)
+                # else:
+                    # logging.debug("\rIncorrect input")
 
 def display_image(image_path, data_path):
 
@@ -86,60 +91,64 @@ def display_image(image_path, data_path):
         entries = list(reader)
         i = 0
         while i < len(entries):
-            left_img = entries[i][0]
-            right_img = entries[i][1]
-            command = int(entries[i][2])
-            left_name = left_path+left_img
-            right_name = right_path+right_img
-            left_img = pygame.image.load(left_path+left_img)
-            right_img = pygame.image.load(right_path+right_img)
-            if left_img and right_img:
-                img_left = pygame.transform.scale(left_img,(oshapeX,oshapeY))
-                img_right = pygame.transform.scale(right_img,(oshapeX,oshapeY))
-                screen.blit(img_left,(0,0))
-                screen.blit(img_right,(oshapeX,0))
-                print (left_name, right_name)
-                md_img, _ = process_image([left_name,right_name], None, False, True, shape=(shapeY,shapeX))
-                pred_act = model.predict(np.array([md_img]))[0]
-                pred = "Lft: %.2f | Fwd: %.2f | Rht: %.2f | Rev: %.2f" % \
-            (pred_act[1], pred_act[0], pred_act[2], pred_act[3])
-                pygame.display.set_caption(actions[command] + " | " + pred)
-                pygame.display.flip()
-            # print(entries[i])
-            act_i = np.argmax(pred_act)
-            print (actions[act_i])
-            if (pred_act[act_i]<conf_level):
-                act_i = 3
-            print ("final: ", actions[act_i], actions[command])
-            if (act_i == 3 and command == 0) or (act_i == 0 and command == 3):
-                press = wait_key(command)
-                if press < 0:
-                # exiting and go forward with writing csv
-                    break
-                elif press > 3:
-                    if press == 4:
-                        if i == 0:
-                            logging.warning("Can't do that, at earliest")
-                        else:
-                            i -= 1
+            if entries[i]:
+                left_img = entries[i][0]
+                right_img = entries[i][1]
+                command = int(entries[i][2])
+                left_name = left_path+left_img
+                right_name = right_path+right_img
+                left_img = pygame.image.load(left_path+left_img)
+                right_img = pygame.image.load(right_path+right_img)
+                if left_img and right_img:
+                    img_left = pygame.transform.scale(left_img,(oshapeX,oshapeY))
+                    img_right = pygame.transform.scale(right_img,(oshapeX,oshapeY))
+                    screen.blit(img_left,(0,0))
+                    screen.blit(img_right,(oshapeX,0))
+                    print (left_name, right_name)
+                    md_img, _ = process_image([left_name,right_name], None, False, True, shape=(shapeY,shapeX))
+                    pred_act = model.predict(np.array([md_img]))[0]
+                    pred = "Lft: %.2f | Fwd: %.2f | Rht: %.2f | Rev: %.2f" % \
+                (pred_act[1], pred_act[0], pred_act[2], pred_act[3])
+                    pygame.display.set_caption(actions[command] + " | " + pred)
+                    pygame.display.flip()
+                # print(entries[i])
+                act_i = np.argmax(pred_act)
+                # print (actions[act_i])
+                # if (pred_act[act_i]<conf_level):
+                #     act_i = 3
+                # print ("final: ", actions[act_i], actions[command])
+                if act_i != command:
+                    press = wait_key(command)
+                    if press < 0:
+                    # exiting and go forward with writing csv
+                        break
+                    elif press > 3:
+                        if press == 4:
+                            if i == 0:
+                                logging.warning("Can't do that, at earliest")
+                            else:
+                                i -= 1
+                        elif press == 5:
+                            if i == len(entries):
+                                logging.warning("Can't do that, at latest")
+                            else:
+                                i += 1
+                        elif press == 6:
+                            entries[i] = []
+                            i += 1
                     else:
-                        if i == len(entries):
-                            logging.warning("Can't do that, at latest")
-                        else:
-                            i += 1 
+                        i += 1
+                        entries[i][2] = press
+                        # print("changed")
+                        # print(entries[i])
+                    ct = time.time()
+                    while (ct - ot) * 1000 < 100:
+                        pygame.event.clear()
+                        pygame.event.pump()
+                        ct = time.time()
+                    ot = ct
                 else:
                     i += 1
-                    entries[i][2] = press
-                    # print("changed")
-                    # print(entries[i])
-                ct = time.time()
-                while (ct - ot) * 1000 < 100:
-                    pygame.event.clear()
-                    pygame.event.pump()
-                    ct = time.time()
-                ot = ct
-            else:
-                i += 1
 
     #write file
     # print(entries)
@@ -148,7 +157,8 @@ def display_image(image_path, data_path):
             writer = csv.writer(csv_file, delimiter=',')
             writer.writerow(attributes)
             for row in entries:
-                writer.writerow(row)
+                if row:
+                    writer.writerow(row)
 
 if __name__ == "__main__":
     parser = build_parser()
