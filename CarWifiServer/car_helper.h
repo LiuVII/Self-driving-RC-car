@@ -30,6 +30,12 @@ extern int left;
 extern int straight;
 extern int right;
 
+extern int h_lf;
+extern int h_rt;
+extern int h_st;
+
+extern bool wheel;
+
 
 #define IS_DIR_VAL(x)		(x.l_r || x.f_r)
 #define ANGLE_VALID(x)	(x >= RIGHT && x <= LEFT)
@@ -57,6 +63,7 @@ dir_t parse_request(String &req);
 void send_accept(WiFiClient &client, dir_t &dir);
 
 void set_direction(dir_t &dir);
+void set_hdirection(dir_t &dir);
 void activate_motor(dir_t &dir);
 void deactivate_motor();
 

@@ -14,6 +14,11 @@ void setup() {
 	straight = STRAIGHT;
 	left = LEFT;
 	right = RIGHT;
+
+	wheel = false;
+	h_rt = RIGHT;
+	h_st = STRAIGHT;
+	h_lf = LEFT;
 	// angle = straight;
 	// speed = M;
 
@@ -83,7 +88,10 @@ void loop() {
   		Serial.print("True");
   		if (current_state.f_r != curr_request.f_r)
   			deactivate_motor();
-  		set_direction(curr_request);
+  		if (!wheel)
+			set_direction(curr_request);
+		else
+			set_hdirection(curr_request);
   		if (curr_request.f_r)
   			activate_motor(curr_request);
   		ignored_cnt = 0;

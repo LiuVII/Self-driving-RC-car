@@ -11,6 +11,12 @@ int straight;
 int left;
 int right;
 
+bool wheel;
+
+int h_lf;
+int h_rt;
+int h_st;
+
 int expire;
 unsigned long start_time;
 unsigned long ignore_time;
@@ -47,23 +53,40 @@ dir_t parse_request(String &req) {
 	if ((index = req.indexOf("/lf")) != -1){
 		ret_dir.l_r = -1;
 		index += String("/lf").length();
-    // if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
-		// 	val = 0;
 		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
 			if (val >= 0)
 				left = val;
 		}
+		wheel = false;
 	}
 	if ((index = req.indexOf("/rt")) != -1) {
 		ret_dir.l_r = 1;
 		index += String("/rt").length();
-    // if (!(val = atoi(req.c_str() + index)) && req.c_str()[index] != '0')
-		// 	val = 0;
 		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
 			if (val >= 0)
 				right = val;
 		}
+		wheel = false;
 	}
+	if ((index = req.indexOf("/hlf")) != -1){
+		ret_dir.l_r = -1;
+		index += String("/hlf").length();
+		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+				h_lf = val;
+		}
+		wheel = true;	
+	}
+	if ((index = req.indexOf("/hrt")) != -1) {
+		ret_dir.l_r = 1;
+		index += String("/hrt").length();
+		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0)
+				h_rt = val;
+		}
+		wheel = true;	
+	}
+	
 	// angle += val * -1 * ret_dir.l_r; // adjust angle the wheel
 	// if (angle > 120) angle = 120;
 	// else if (angle < 30) angle = 30;
@@ -81,6 +104,17 @@ dir_t parse_request(String &req) {
 				// ret_dir.l_r = 0;
 			}
 		}
+		wheel = false;
+	}
+
+	if ((index = req.indexOf("/hst")) != -1) {
+		index += String("/hst").length();
+		if ((val = atoi(req.c_str() + index)) || req.c_str()[index] == '0') {
+			if (val >= 0) {
+				h_st = val;
+			}
+		}
+		wheel = true;	
 	}
 
 	// Expire period set
@@ -123,11 +157,20 @@ dir_t parse_request(String &req) {
 void send_accept(WiFiClient &client, dir_t &dir) {
 	String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
 	s += "<!DOCTYPE HTML>\r\n<html>\r\n<br>";
+	if (wheel)
+		s += "WHEEL: ON \r\n<br>";
+	else
+		s += "WHEEL: OFF \r\n<br>";
 	s += "IR: " + String(digitalRead(IR)) + "\r\n<br>";
 	s += "old left/right: " + String(current_state.l_r) + "\r\n<br>";
 	s += "old forward/reverse: " + String(current_state.f_r) + "\r\n<br>";
-	s += "straight(def 75(min 30, max 120)): " + String(straight) + "\r\n<br>";
-	s += "left/right max/min (120/30): " + String(left) + " " + String(right) + "\r\n<br>";
+	if (wheel) {
+		s += "straight(def 75(min 30, max 120)): " + String(h_st) + "\r\n<br>";
+		s += "left/right max/min (120/30): " + String(h_lf) + " " + String(h_rt) + "\r\n<br>";
+	} else {
+		s += "straight(def 75(min 30, max 120)): " + String(straight) + "\r\n<br>";
+		s += "left/right max/min (120/30): " + String(left) + " " + String(right) + "\r\n<br>";
+	}
 	s += "new left/right: " + String(dir.l_r) + "\r\n<br>";
 	s += "new forward/reverse: " + String(dir.f_r) + "\r\n<br>";
 	s += "Speed: " + String(m) + "\r\n<br>";
@@ -149,6 +192,22 @@ void set_direction(dir_t &dir) {
 	}
 	if (dir.l_r == 1) {
 		myservo.write(right);
+		Serial.println("Steering angle: right");
+	}
+	// myservo.write(angle);
+}
+
+void set_hdirection(dir_t &dir) {
+	if (dir.l_r == -1) {
+		myservo.write(h_lf);
+		Serial.println("Steering angle: left");
+	}
+	if (dir.l_r == 0) {
+		myservo.write(h_st);
+		Serial.println("Steering angle: straight");
+	}
+	if (dir.l_r == 1) {
+		myservo.write(h_rt);
 		Serial.println("Steering angle: right");
 	}
 	// myservo.write(angle);
