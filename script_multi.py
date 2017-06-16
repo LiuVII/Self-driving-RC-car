@@ -12,9 +12,9 @@ def check_parameters():
         print "Corresponding log.csv file for %s does not exists" % \
             (args.record_set)
         exit(1)
-    elif not os.path.exists(image_set_dir+args.record_set):
-        print "%s data set does not exist" % (args.record_set)
-        exit(1)
+    # elif not os.path.exists(image_set_dir+args.record_set):
+    #     print "%s data set does not exist" % (args.record_set)
+    #     exit(1)
 
     if not os.path.exists(stream_dir+args.record_stream):
         print "%s stream path does not exist" % (args.record_set)
@@ -92,8 +92,10 @@ def process_data():
             left_tmp = get_ctime(left_stk[0],file_path[0])
             right_tmp = get_ctime(right_stk[0],file_path[1])
             entries.append([left_tmp, right_tmp, df['command'].iloc[inds[0]]])
-            shutil.copy(file_path[0]+left_lst[0],output_path[0]+left_tmp)
-            shutil.copy(file_path[1]+right_lst[0],output_path[1]+right_tmp)
+            # print(file_path[0]+left_stk[0],output_path[0]+left_tmp)
+            # print(file_path[1]+right_stk[0],output_path[1]+right_tmp)
+            shutil.copy(file_path[0]+left_stk[0],output_path[0]+left_tmp)
+            shutil.copy(file_path[1]+right_stk[0],output_path[1]+right_tmp)
             left_stk = left_stk[1:]
             right_stk = right_stk[1:]
 

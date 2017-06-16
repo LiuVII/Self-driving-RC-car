@@ -61,16 +61,11 @@ if __name__ == '__main__':
 		img_paths = [os.path.join(path[0],img_name_lf),
 					os.path.join(path[1], img_name_rt)]
 		command = df['command'].iloc[ind]
-		print(img_paths)
+		# print(img_paths)
 		img_lf = cv2.imread(img_paths[0], 1)
 		img_rt = cv2.imread(img_paths[1], 1)
 		# print (img_lf.size, img_rt.size)
 		img = np.concatenate((img_lf, img_rt), axis=1)
-		# cv2.imshow("img",img)
-		# if type(prev_img) != type(None):
-			# img_show = np.concatenate((img, prev_img), axis=0)
-			# cv2.imshow("prev", prev_img)
-		# cv2.waitKey()
 		img = img / 255.
 		if type(prev_img) != type(None):
 			diff = np.fabs(img - prev_img)
@@ -84,10 +79,14 @@ if __name__ == '__main__':
 			# print(img_name)
 			# os.remove(args.img_dir+"/left/"+img_name_lf)
 			# os.remove(args.img_dir+"/right/"+img_name_rt)
-			# print("Image %s is a duplicate of %s" % (str([img_name_lf,img_name_rt]), str(prev_name)))
+			print("Image %s is a duplicate of %s" % (str([img_name_lf,img_name_rt]), str(prev_name)))
+			# cv2.imshow("img",img)
+			# img_show = np.concatenate((img, prev_img), axis=0)
+			# cv2.imshow("prev", prev_img)
+			# cv2.waitKey()
 			count += 1
 			continue
-		print("Not dupe")
+		# print("Not dupe")
 		sa_lst.append([img_name_lf, img_name_rt, command])
 		prev_img = img
 		prev_name = [img_name_lf, img_name_rt]

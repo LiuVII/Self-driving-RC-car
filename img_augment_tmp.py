@@ -86,17 +86,17 @@ def process_image(path, name, command, op_todo, shape=(shapeY, shapeX)):
 
     for ops in op_todo:
         new_command = command
-        for image_path in image_paths:
-            img_orig = cv2.imread(image_path)
+        for ind in range(len(image_paths)):
+            img_orig = cv2.imread(image_paths[ind])
             new_image = img_orig
             output_prepend = ""
             for op in ops:
                 output_prepend += op[0]+"_"
                 new_image = op[1](new_image)
                 if op[0] == 'flip':
-                    new_command = reverse[new_command]
-            aug_images.append([output_prepend+name,new_command])
-            cv2.imwrite(filename=path+output_prepend+name[i],img=new_image)
+                    new_command = reverse[command]
+            cv2.imwrite(filename=path[ind]+output_prepend+name[ind],img=new_image)
+        aug_images.append([output_prepend+name[0],output_prepend+name[1],new_command])
         # # do darkening and brightening
         # tmp_img = new_image
         # tmp_img = image_darken(tmp_img)
@@ -148,7 +148,7 @@ def synthesize_images(set_name, op_list):
             cnt_iter += 1
             printProgressBar(cnt_iter, cnt_total)
             # try:
-            new_entries = process_image(img_path, entry[:-2], int(entry[-1]), op_todo)
+            new_entries = process_image(img_path, [entry[0],entry[1]], int(entry[-1]), op_todo)
             writer = csv.writer(io_csv, delimiter=',')
             for new_entry in new_entries:
                 writer.writerow(new_entry)
