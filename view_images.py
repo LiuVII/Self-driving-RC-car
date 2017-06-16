@@ -39,6 +39,12 @@ def build_parser():
         type=str,
         help="model"
     )
+    parser.add_argument(
+        '-view',
+        action='store_true',
+        default=False,
+        help="Set view mode on/off. Default: off"
+    )
     return parser
 
 def wait_key(command):
@@ -117,7 +123,7 @@ def display_image(image_path, data_path):
                 # if (pred_act[act_i]<conf_level):
                 #     act_i = 3
                 # print ("final: ", actions[act_i], actions[command])
-                if act_i != command or pred_act[act_i]<conf_level:
+                if act_i != command or pred_act[act_i]<conf_level or args.view:
                     press = wait_key(command)
                     if press < 0:
                     # exiting and go forward with writing csv

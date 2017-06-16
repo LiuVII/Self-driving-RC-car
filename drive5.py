@@ -364,8 +364,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     var, model, auto, train = verify_args()
 
-    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '/exp' + str(args.exp_time) + '/m'+str(args.speed)]
-    clinks = [args.url + el for el in links]
+    links = ['/fwd', '/fwd/lf', '/fwd/rt', '/rev', '/rev/lf', '/rev/rt', '']
+    clinks = [args.url + el +'/exp' + str(args.exp_time) + '/m'+str(args.speed) for el in links]
     sa_lst = []
     threads = []
 
