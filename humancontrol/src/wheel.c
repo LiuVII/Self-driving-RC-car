@@ -18,7 +18,7 @@ int	vid = 0x046d;
 
 //Constants for using curl
 char *ip = "192.168.2.3";
-char *datturn[3] = {"/lf", "", "/rt"};
+char *datturn[3] = {"/hlf", "", "/hrt"};
 char *datdir[2] = {"/rev", "/fwd"};
 
 //Header for time
@@ -94,35 +94,33 @@ int	parse(unsigned char buf[256])
 	//Check gas pedal
 	if (buf[5] < 0xff){
 		on = 1;
-//		printf("Gas is on\n");
 	}
 	else{
 		on = 0;
-//		printf("Gas is off\n");
 	}
 
 	//Check brake pedal
 	if (buf[6] < 0xff) {
 		on &= 0;
-//		printf("Brake is on\n");
 	}
 	else{
 		on &= 1;
-//		printf("Brake is off\n");
 	}
 
 	//Send command to car...
-	if (on && dir < 2)
+	//if (on && dir < 2)
+	if (1)
 	{
 		char command[128];
 		char num[4];
 
 		memset(command, 0, 128);
 //		strcat(command, ip);
-		strcat(command, datdir[dir]);
+		if (on && gear)
+			strcat(command, datdir[dir]);
 		strcat(command, datturn[turn]);
 		if (turn != 1) {
-			sprintf(num, "%d", (int)(steer - 75) * (-1));
+			sprintf(num, "%.0f", (steer - 75) * (-1));
 			strcat(command, num);
 		}
 		for (int i = 0; i < 128; i++)
@@ -167,7 +165,7 @@ int main(void)
 	handle = hid_open(vid, pid, NULL);
 	if (!handle) {
 		printf("unable to open device\n");
- 		return 1;
+ 		return (1);
 	}
 
 	// Read the Product String
@@ -210,5 +208,5 @@ int main(void)
 	/* Free static HIDAPI objects. */
 	hid_exit();
 
-	return 0;
+	return (0);
 }

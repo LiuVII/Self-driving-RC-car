@@ -185,10 +185,6 @@ def send_control(act_i, img):
         logging.info("Sending command %s" % links[act_i])
         if not args.teach:
             r = urllib2.urlopen(clinks[act_i], timeout=2)
-            if args.wheel:
-                if act_i < 6:
-        			#Car drive
-                    engine(1)
         if train and act_i < 6:
             t = threading.Thread(target=record_data, args=(act_i,img))
             t.setDaemon(True)
@@ -211,6 +207,8 @@ def manual_drive_ext(img,intent):
 def manual_drive(img, keys, wheel):
     try:
         r = urllib2.urlopen(args.url+wheel, timeout=2)
+        if links[0] in wheel or links[3] in wheel:
+            engine(1)
     except:
         logging.error("Error: wheel command failed.")
     # for act_i in range(len(links)):
