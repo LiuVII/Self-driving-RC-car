@@ -33,8 +33,8 @@ def get_ctime(file_name, path):
     
 def process_data():
     in_csv_file = data_set_dir+args.record_set+"_log.csv"
-    left_lst = os.listdir(file_path[0])
-    right_lst = os.listdir(file_path[1])
+    left_lst = os.listdir(file_path[0]).sort()
+    right_lst = os.listdir(file_path[1]).sort()
 
     df = pd.read_csv(in_csv_file, names=['img_left','img_right','command'])
 
